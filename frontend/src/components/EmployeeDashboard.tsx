@@ -1,0 +1,634 @@
+import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner@2.0.3';
+import { mockAPI } from '../utils/mockData.tsx';
+
+interface EmployeeDashboardProps {
+  user: any;
+  onLogout: () => void;
+}
+
+export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
+  const [activeSection, setActiveSection] = useState('overview');
+  const [performanceData, setPerformanceData] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
+  const [payroll, setPayroll] = useState<any[]>([]);
+  const [deductions, setDeductions] = useState<any[]>([]);
+  const [leaveStatus, setLeaveStatus] = useState<any[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [semester, setSemester] = useState('');
+  const [deductionMonth, setDeductionMonth] = useState('');
+  const [annualLeaveForm, setAnnualLeaveForm] = useState({ start_date: '', end_date: '', replacement_emp: '' });
+  const [accidentalLeaveForm, setAccidentalLeaveForm] = useState({ start_date: '' });
+  const [medicalLeaveForm, setMedicalLeaveForm] = useState({
+    start_date: '', end_date: '', type: 'sick', insurance_status: false, disability_details: '', document_description: '', file_name: ''
+  });
+  const [unpaidLeaveForm, setUnpaidLeaveForm] = useState({ start_date: '', end_date: '', document_description: '', file_name: '' });
+  const [compensationLeaveForm, setCompensationLeaveForm] = useState({ compensation_date: '', reason: '', date_of_original_workday: '', replacement_emp: '' });
+  const [evaluationForm, setEvaluationForm] = useState({ employee_ID: '', rating: '5', comments: '', semester: '' });
+
+  const sections = [
+    { id: 'overview', name: 'Overview', icon: '📊' },
+    { id: 'attendance', name: 'Attendance', icon: '📅' },
+    { id: 'leaves', name: 'Apply Leaves', icon: '🏖️' },
+    { id: 'approvals', name: 'Approve Leaves', icon: '✅' },
+    { id: 'performance', name: 'Performance', icon: '⭐' },
+    { id: 'evaluate', name: 'Evaluate', icon: '📝' }
+  ];
+
+  useEffect(() => {
+    if (activeSection === 'overview') {
+      loadOverviewData();
+    }
+  }, [activeSection]);
+
+  const loadOverviewData = async () => {
+    setLoading(true);
+    try {
+      const [attResult, payResult, statusResult] = await Promise.all([
+        mockAPI.getAttendance(user.employee_ID),
+        mockAPI.getLastMonthPayroll(user.employee_ID),
+        mockAPI.getLeaveStatus(user.employee_ID)
+      ]);
+      setAttendance(attResult.data);
+      setPayroll(payResult.data);
+      setLeaveStatus(statusResult.data);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-gray-900 text-xl">{user.first_name} {user.last_name}</h1>
+                <p className="text-gray-600 text-sm">Employee ID: {user.employee_ID} • {user.dept_name}</p>
+              </div>
+            </div>
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Navigation Pills */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2 mb-8">
+          <div className="flex flex-wrap gap-2">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${
+                  activeSection === section.id
+                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-lg'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <span>{section.icon}</span>
+                <span>{section.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Overview Section */}
+        {activeSection === 'overview' && (
+          <div className="space-y-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg opacity-90">Annual Leave</h3>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">🏖️</div>
+                </div>
+                <p className="text-4xl mb-1">{user.annual_balance}</p>
+                <p className="text-sm opacity-80">days available</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg opacity-90">Accidental Leave</h3>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">⚡</div>
+                </div>
+                <p className="text-4xl mb-1">{user.accidental_balance}</p>
+                <p className="text-sm opacity-80">days available</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg opacity-90">Status</h3>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">📊</div>
+                </div>
+                <p className="text-4xl mb-1 capitalize">{user.employment_status}</p>
+                <p className="text-sm opacity-80">{user.type_of_contract}</p>
+              </div>
+            </div>
+
+            {payroll.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                  <span>💰</span>
+                  Last Month's Payroll
+                </h3>
+                {payroll.map((pay) => (
+                  <div key={pay.ID} className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
+                    <div className="grid md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-gray-600 text-sm">Base + Bonus</p>
+                        <p className="text-green-700 text-lg">+${pay.bonus_amount?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Deductions</p>
+                        <p className="text-red-700 text-lg">-${pay.deductions_amount?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Period</p>
+                        <p className="text-gray-900 text-sm">{pay.from_date} to {pay.to_date}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Final Salary</p>
+                        <p className="text-indigo-700 text-2xl">${pay.final_salary_amount?.toFixed(2) || '0.00'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {leaveStatus.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                  <span>📝</span>
+                  Recent Leave Requests
+                </h3>
+                <div className="space-y-2">
+                  {leaveStatus.map((leave) => (
+                    <div key={leave.request_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                      <div>
+                        <p className="text-gray-900">Request #{leave.request_id}</p>
+                        <p className="text-gray-600 text-sm">Submitted: {leave.date_of_request}</p>
+                      </div>
+                      <span className={`px-4 py-2 rounded-full text-sm ${
+                        leave.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        leave.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {leave.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Attendance Section */}
+        {activeSection === 'attendance' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-900 flex items-center gap-2">
+                  <span>📅</span>
+                  My Attendance (Current Month)
+                </h3>
+                <button
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      const result = await mockAPI.getAttendance(user.employee_ID);
+                      setAttendance(result.data);
+                      toast.success('Attendance refreshed');
+                    } catch (error: any) {
+                      toast.error(error.message);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
+                >
+                  Refresh
+                </button>
+              </div>
+              {attendance.length === 0 ? (
+                <p className="text-gray-600">No attendance records found</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-gray-200">
+                        <th className="text-left py-3 px-4 text-gray-700">Date</th>
+                        <th className="text-left py-3 px-4 text-gray-700">Check-in</th>
+                        <th className="text-left py-3 px-4 text-gray-700">Check-out</th>
+                        <th className="text-left py-3 px-4 text-gray-700">Duration</th>
+                        <th className="text-left py-3 px-4 text-gray-700">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendance.map((att) => (
+                        <tr key={att.attendance_ID} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4 text-gray-900">{att.date}</td>
+                          <td className="py-3 px-4 text-gray-600">{att.check_in_time || 'N/A'}</td>
+                          <td className="py-3 px-4 text-gray-600">{att.check_out_time || 'N/A'}</td>
+                          <td className="py-3 px-4 text-gray-600">{att.total_duration ? `${att.total_duration} mins` : 'N/A'}</td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs ${
+                              att.status === 'attended' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                              {att.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                <span>💸</span>
+                Check Deductions
+              </h3>
+              <div className="flex gap-4 mb-4">
+                <input
+                  type="number"
+                  min="1"
+                  max="12"
+                  placeholder="Month (1-12)"
+                  value={deductionMonth}
+                  onChange={(e) => setDeductionMonth(e.target.value)}
+                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={async () => {
+                    if (!deductionMonth) {
+                      toast.error('Please enter a month');
+                      return;
+                    }
+                    setLoading(true);
+                    try {
+                      const result = await mockAPI.getDeductions(user.employee_ID, parseInt(deductionMonth));
+                      setDeductions(result.data);
+                      toast.success('Deductions loaded');
+                    } catch (error: any) {
+                      toast.error(error.message);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className="bg-indigo-500 text-white px-6 py-3 rounded-xl hover:bg-indigo-600 transition-colors"
+                >
+                  Load Deductions
+                </button>
+              </div>
+              {deductions.length > 0 && (
+                <div className="space-y-2">
+                  {deductions.map((ded) => (
+                    <div key={ded.deduction_ID} className="flex items-center justify-between p-4 bg-red-50 rounded-xl border border-red-200">
+                      <div>
+                        <p className="text-gray-900">{ded.type}</p>
+                        <p className="text-gray-600 text-sm">{ded.date}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-red-700">-${ded.amount?.toFixed(2) || '0.00'}</p>
+                        <p className="text-gray-600 text-xs">{ded.status}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Apply Leaves Section */}
+        {activeSection === 'leaves' && (
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Annual Leave */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                <span>🏖️</span>
+                Annual Leave
+              </h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                  const result = await mockAPI.submitAnnualLeave(user.employee_ID, annualLeaveForm.start_date, annualLeaveForm.end_date, annualLeaveForm.replacement_emp ? parseInt(annualLeaveForm.replacement_emp) : null);
+                  toast.success(result.message);
+                  setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
+                } catch (error: any) {
+                  toast.error(error.message);
+                } finally {
+                  setLoading(false);
+                }
+              }} className="space-y-4">
+                <input type="date" value={annualLeaveForm.start_date} onChange={(e) => setAnnualLeaveForm({ ...annualLeaveForm, start_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <input type="date" value={annualLeaveForm.end_date} onChange={(e) => setAnnualLeaveForm({ ...annualLeaveForm, end_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <input type="number" placeholder="Replacement Employee ID" value={annualLeaveForm.replacement_emp} onChange={(e) => setAnnualLeaveForm({ ...annualLeaveForm, replacement_emp: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50">
+                  Submit Annual Leave
+                </button>
+              </form>
+            </div>
+
+            {/* Accidental Leave */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                <span>⚡</span>
+                Accidental Leave
+              </h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                  const result = await mockAPI.submitAccidentalLeave(user.employee_ID, accidentalLeaveForm.start_date);
+                  toast.success(result.message);
+                  setAccidentalLeaveForm({ start_date: '' });
+                } catch (error: any) {
+                  toast.error(error.message);
+                } finally {
+                  setLoading(false);
+                }
+              }} className="space-y-4">
+                <input type="date" value={accidentalLeaveForm.start_date} onChange={(e) => setAccidentalLeaveForm({ start_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <p className="text-sm text-gray-600">⏰ Must be requested within 48 hours</p>
+                <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-3 rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50">
+                  Submit Accidental Leave
+                </button>
+              </form>
+            </div>
+
+            {/* Medical Leave */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                <span>🏥</span>
+                Medical Leave
+              </h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                  const result = await mockAPI.submitMedicalLeave({ employee_ID: user.employee_ID, ...medicalLeaveForm });
+                  toast.success(result.message);
+                  setMedicalLeaveForm({ start_date: '', end_date: '', type: 'sick', insurance_status: false, disability_details: '', document_description: '', file_name: '' });
+                } catch (error: any) {
+                  toast.error(error.message);
+                } finally {
+                  setLoading(false);
+                }
+              }} className="space-y-4">
+                <input type="date" value={medicalLeaveForm.start_date} onChange={(e) => setMedicalLeaveForm({ ...medicalLeaveForm, start_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <input type="date" value={medicalLeaveForm.end_date} onChange={(e) => setMedicalLeaveForm({ ...medicalLeaveForm, end_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <select value={medicalLeaveForm.type} onChange={(e) => setMedicalLeaveForm({ ...medicalLeaveForm, type: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                  <option value="sick">Sick Leave</option>
+                  <option value="maternity">Maternity Leave</option>
+                </select>
+                <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-3 rounded-xl hover:from-red-600 hover:to-red-700 transition-all disabled:opacity-50">
+                  Submit Medical Leave
+                </button>
+              </form>
+            </div>
+
+            {/* Unpaid Leave */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                <span>💼</span>
+                Unpaid Leave
+              </h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                try {
+                  const result = await mockAPI.submitUnpaidLeave({ employee_ID: user.employee_ID, ...unpaidLeaveForm });
+                  toast.success(result.message);
+                  setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
+                } catch (error: any) {
+                  toast.error(error.message);
+                } finally {
+                  setLoading(false);
+                }
+              }} className="space-y-4">
+                <input type="date" value={unpaidLeaveForm.start_date} onChange={(e) => setUnpaidLeaveForm({ ...unpaidLeaveForm, start_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <input type="date" value={unpaidLeaveForm.end_date} onChange={(e) => setUnpaidLeaveForm({ ...unpaidLeaveForm, end_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                <p className="text-sm text-gray-600">📝 Maximum 30 days per year</p>
+                <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-gray-500 to-gray-600 text-white px-6 py-3 rounded-xl hover:from-gray-600 hover:to-gray-700 transition-all disabled:opacity-50">
+                  Submit Unpaid Leave
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Approve Leaves Section */}
+        {activeSection === 'approvals' && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+              <span>✅</span>
+              Pending Approvals
+            </h3>
+            <p className="text-gray-600 text-sm mb-4">As a Dean/Vice-Dean/President, approve or reject leave requests</p>
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const result = await mockAPI.getPendingApprovals(user.employee_ID);
+                  setPendingApprovals(result.data);
+                  toast.success('Approvals loaded');
+                } catch (error: any) {
+                  toast.error(error.message);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
+            >
+              Load Pending Approvals
+            </button>
+            {pendingApprovals.length === 0 ? (
+              <p className="text-gray-600">No pending approvals</p>
+            ) : (
+              <div className="space-y-4">
+                {pendingApprovals.map((approval) => (
+                  <div key={`${approval.Emp1_ID}-${approval.Leave_ID}`} className="p-6 bg-gray-50 border border-gray-200 rounded-xl">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-gray-900 mb-2">{approval.leaveType}</h4>
+                        <p className="text-gray-600 text-sm">Requested by: {approval.requestor}</p>
+                        <p className="text-gray-600 text-sm">Period: {approval.leave.start_date} to {approval.leave.end_date} ({approval.leave.num_days} days)</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              const result = await mockAPI.approveLeave(user.employee_ID, approval.Leave_ID, 'approved');
+                              toast.success(result.message);
+                              const refreshResult = await mockAPI.getPendingApprovals(user.employee_ID);
+                              setPendingApprovals(refreshResult.data);
+                            } catch (error: any) {
+                              toast.error(error.message);
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              const result = await mockAPI.approveLeave(user.employee_ID, approval.Leave_ID, 'rejected');
+                              toast.success(result.message);
+                              const refreshResult = await mockAPI.getPendingApprovals(user.employee_ID);
+                              setPendingApprovals(refreshResult.data);
+                            } catch (error: any) {
+                              toast.error(error.message);
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                        >
+                          ✗ Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Performance Section */}
+        {activeSection === 'performance' && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+              <span>⭐</span>
+              My Performance
+            </h3>
+            <div className="flex gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Semester (e.g., W24)"
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+                className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                onClick={async () => {
+                  if (!semester) {
+                    toast.error('Please enter a semester');
+                    return;
+                  }
+                  setLoading(true);
+                  try {
+                    const result = await mockAPI.getPerformance(user.employee_ID, semester);
+                    setPerformanceData(result.data);
+                    toast.success('Performance loaded');
+                  } catch (error: any) {
+                    toast.error(error.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="bg-indigo-500 text-white px-6 py-3 rounded-xl hover:bg-indigo-600 transition-colors"
+              >
+                Load Performance
+              </button>
+            </div>
+            {performanceData.length > 0 && (
+              <div className="space-y-4">
+                {performanceData.map((perf, idx) => (
+                  <div key={idx} className="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-900 text-lg">Semester: {perf.semester}</p>
+                        <p className="text-gray-600 mt-1">{perf.comments || 'No comments'}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <svg
+                            key={i}
+                            className={`w-6 h-6 ${i < perf.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                        <span className="ml-2 text-gray-700 text-lg">{perf.rating}/5</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Evaluate Section */}
+        {activeSection === 'evaluate' && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+              <span>📝</span>
+              Evaluate Employee (Dean Only)
+            </h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setLoading(true);
+              try {
+                const result = await mockAPI.submitEvaluation({ evaluator_ID: user.employee_ID, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) });
+                toast.success(result.message);
+                setEvaluationForm({ employee_ID: '', rating: '5', comments: '', semester: '' });
+              } catch (error: any) {
+                toast.error(error.message);
+              } finally {
+                setLoading(false);
+              }
+            }} className="space-y-4 max-w-2xl">
+              <input type="number" placeholder="Employee ID" value={evaluationForm.employee_ID} onChange={(e) => setEvaluationForm({ ...evaluationForm, employee_ID: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+              <input type="text" placeholder="Semester (e.g., W24)" value={evaluationForm.semester} onChange={(e) => setEvaluationForm({ ...evaluationForm, semester: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+              <select value={evaluationForm.rating} onChange={(e) => setEvaluationForm({ ...evaluationForm, rating: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
+                <option value="1">1 - Poor</option>
+                <option value="2">2 - Fair</option>
+                <option value="3">3 - Good</option>
+                <option value="4">4 - Very Good</option>
+                <option value="5">5 - Excellent</option>
+              </select>
+              <textarea value={evaluationForm.comments} onChange={(e) => setEvaluationForm({ ...evaluationForm, comments: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" rows={3} placeholder="Comments" />
+              <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all disabled:opacity-50">
+                Submit Evaluation
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
