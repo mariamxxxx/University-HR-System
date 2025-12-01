@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { toast } from 'sonner@2.0.3';
-import { mockAPI } from '../utils/mockData.tsx';
+import { toast } from 'sonner';
+import { api } from '../utils/api.tsx';
 
 interface UnifiedLoginProps {
   onLogin: (user: any, userType: 'admin' | 'employee' | 'hr') => void;
@@ -37,19 +37,19 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
       let result;
       
       if (userType === 'admin') {
-        result = await mockAPI.adminLogin(userId, password);
+        result = await api.adminLogin(userId, password);
         if (result.success) {
           toast.success('Welcome Admin');
           onLogin({ adminId: userId }, 'admin');
         }
       } else if (userType === 'employee') {
-        result = await mockAPI.employeeLogin(parseInt(userId), password);
+        result = await api.employeeLogin(parseInt(userId), password);
         if (result.success) {
           toast.success(`Welcome back, ${result.data.first_name}`);
           onLogin(result.data, 'employee');
         }
       } else {
-        result = await mockAPI.hrLogin(parseInt(userId), password);
+        result = await api.hrLogin(parseInt(userId), password);
         if (result.success) {
           toast.success(`Welcome to HR Portal, ${result.data.first_name}`);
           onLogin(result.data, 'hr');
@@ -76,7 +76,7 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
 
     setLoading(true);
     try {
-      const result = await mockAPI.signupEmployee(signupData);
+      const result = await api.signupEmployee(signupData);
       if (result.success) {
         toast.success(result.message);
         setMode('login');
@@ -111,6 +111,7 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
       { id: '1001', password: 'password123', name: 'John Smith (Dean)' },
       { id: '1002', password: 'password123', name: 'Sarah Johnson (Professor)' },
       { id: '1003', password: 'password123', name: 'Michael Brown (Asst Prof)' },
+      { id: '1002', password: 'password123', name: 'Sarah Johnson (Vice Dean)' },
       { id: '1005', password: 'password123', name: 'Robert Wilson (President)' }
     ],
     hr: [
@@ -415,15 +416,6 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
                   </button>
                 </form>
               )}
-
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                  className="text-indigo-600 hover:text-indigo-700 text-sm"
-                >
-                  {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-                </button>
-              </div>
 
               {/* Sample Credentials - Only show in login mode */}
               {mode === 'login' && (
