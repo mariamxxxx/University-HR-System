@@ -12,12 +12,12 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [accidentalLeaveForm, setAccidentalLeaveForm] = useState({ start_date: '' });
+  const [accidentalLeaveForm, setAccidentalLeaveForm] = useState({ start_date: '', end_date: '' });
   const [medicalLeaveForm, setMedicalLeaveForm] = useState({
     start_date: '',
     end_date: '',
     type: 'sick',
-    insurance_status: false,
+    insurance_status: 'yes',
     disability_details: '',
     document_description: '',
     file_name: ''
@@ -58,9 +58,9 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitAccidentalLeave(userId, accidentalLeaveForm.start_date);
+      const result = await mockAPI.submitAccidentalLeave(userId, accidentalLeaveForm.start_date, accidentalLeaveForm.end_date);
       toast.success(result.message);
-      setAccidentalLeaveForm({ start_date: '' });
+      setAccidentalLeaveForm({ start_date: '', end_date: '' });
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit accidental leave');
     } finally {
@@ -78,7 +78,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
         start_date: '',
         end_date: '',
         type: 'sick',
-        insurance_status: false,
+        insurance_status: 'yes',
         disability_details: '',
         document_description: '',
         file_name: ''
@@ -180,8 +180,12 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
             <h3 className="text-gray-900 mb-4">Apply for Accidental Leave</h3>
             <form onSubmit={submitAccidentalLeave} className="space-y-4 max-w-md">
               <div>
-                <label className="block text-gray-700 mb-2">Date (must be requested within 48 hours)</label>
-                <input type="date" value={accidentalLeaveForm.start_date} onChange={(e) => setAccidentalLeaveForm({ start_date: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" required />
+                <label className="block text-gray-700 mb-2">Start Date (must be requested within 48 hours)</label>
+                <input type="date" value={accidentalLeaveForm.start_date} onChange={(e) => setAccidentalLeaveForm({ ...accidentalLeaveForm, start_date: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" required />
+              </div>
+              <div>
+                <label className="block text-gray-700 mb-2">End Date</label>
+                <input type="date" value={accidentalLeaveForm.end_date} onChange={(e) => setAccidentalLeaveForm({ ...accidentalLeaveForm, end_date: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" required />
               </div>
               <button type="submit" disabled={loading} className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
                 {loading ? 'Submitting...' : 'Submit Accidental Leave'}
@@ -210,10 +214,17 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
                 </select>
               </div>
               <div>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={medicalLeaveForm.insurance_status} onChange={(e) => setMedicalLeaveForm({ ...medicalLeaveForm, insurance_status: e.target.checked })} className="rounded" />
-                  <span className="text-gray-700">Insurance Coverage</span>
-                </label>
+                <label className="block text-gray-700 mb-2">Insurance Valid?</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="insurance" checked={medicalLeaveForm.insurance_status === 'yes'} onChange={() => setMedicalLeaveForm({ ...medicalLeaveForm, insurance_status: 'yes' })} className="" />
+                    <span className="text-gray-700">Yes</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" name="insurance" checked={medicalLeaveForm.insurance_status === 'no'} onChange={() => setMedicalLeaveForm({ ...medicalLeaveForm, insurance_status: 'no' })} className="" />
+                    <span className="text-gray-700">No</span>
+                  </label>
+                </div>
               </div>
               <div>
                 <label className="block text-gray-700 mb-2">Disability Details (if any)</label>

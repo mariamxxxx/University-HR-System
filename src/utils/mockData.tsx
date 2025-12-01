@@ -164,9 +164,10 @@ let mockData = {
   roles: [
     { role_name: 'President', title: 'President', description: 'University President', rank: 1, emp_id: 1005 },
     { role_name: 'Dean', title: 'Dean', description: 'Department Dean', rank: 3, emp_id: 1001 },
+    { role_name: 'Vice Dean', title: 'Vice Dean', description: 'Vice Dean', rank: 4, emp_id: 1002 },
     { role_name: 'Professor', title: 'Professor', description: 'Professor', rank: 5, emp_id: 1002 },
     { role_name: 'Assistant Professor', title: 'Assistant Professor', description: 'Assistant Professor', rank: 7, emp_id: 1003 },
-    { role_name: 'HR_Representative_Computer Science', title: 'HR Representative', description: 'HR Rep CS', rank: 11, emp_id: 1004 },
+    { role_name: 'HR Representative', title: 'HR Representative', description: 'HR Rep CS', rank: 11, emp_id: 1004 },
     { role_name: 'Dean', title: 'Dean', description: 'Engineering Dean', rank: 3, emp_id: 1006 }
   ],
   attendance: [
@@ -788,7 +789,7 @@ export const mockAPI = {
   },
 
   // Submit accidental leave
-  submitAccidentalLeave: async (employeeId: number, startDate: string) => {
+  submitAccidentalLeave: async (employeeId: number, startDate: string, endDate: string) => {
     await new Promise(resolve => setTimeout(resolve, 500));
     const employee = mockData.employees.find(e => e.employee_ID === employeeId);
     
@@ -796,7 +797,10 @@ export const mockAPI = {
       return { success: false, message: 'Employee not found' };
     }
     
-    if (employee.accidental_balance < 1) {
+    // Calculate number of days
+    const numDays = Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    if (employee.accidental_balance < numDays) {
       return { success: false, message: 'Insufficient accidental leave balance' };
     }
     
@@ -804,8 +808,8 @@ export const mockAPI = {
       request_ID: mockData.counters.leave++,
       date_of_request: getCurrentDate(),
       start_date: startDate,
-      end_date: startDate,
-      num_days: 1,
+      end_date: endDate,
+      num_days: numDays,
       final_approval_status: 'pending',
       type: 'accidental',
       emp_ID: employeeId

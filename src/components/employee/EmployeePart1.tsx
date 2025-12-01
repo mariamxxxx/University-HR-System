@@ -43,7 +43,7 @@ export function EmployeePart1({ userId }: EmployeePart1Props) {
     setLoading(true);
     try {
       const result = await mockAPI.getAttendance(userId);
-      setAttendance(result.data ?? []);
+      setAttendance(result.data || []);
       toast.success('Attendance records loaded successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to fetch attendance');

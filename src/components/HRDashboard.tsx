@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { mockAPI } from '../utils/mockData.tsx';
 
 interface HRDashboardProps {
@@ -15,10 +15,10 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
   const [payrollForm, setPayrollForm] = useState({ employee_ID: '', from_date: '', to_date: '' });
 
   const sections = [
-    { id: 'overview', name: 'Overview', icon: '📊' },
-    { id: 'leaves', name: 'Leave Approvals', icon: '✅' },
-    { id: 'deductions', name: 'Deductions', icon: '💸' },
-    { id: 'payroll', name: 'Payroll', icon: '💰' }
+    { id: 'overview', name: 'Overview', icon: null },
+    { id: 'leaves', name: 'Leave Approvals', icon: null },
+    { id: 'deductions', name: 'Deductions', icon: null },
+    { id: 'payroll', name: 'Payroll', icon: null }
   ];
 
   useEffect(() => {
@@ -107,28 +107,40 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
         {activeSection === 'overview' && (
           <div className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
+              <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-6 text-white shadow-xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg opacity-90">Pending Leaves</h3>
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">📋</div>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
                 </div>
                 <p className="text-4xl mb-1">{pendingLeaves.length}</p>
                 <p className="text-sm opacity-80">awaiting review</p>
               </div>
 
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg opacity-90">Annual Leaves</h3>
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">🏖️</div>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
                 </div>
                 <p className="text-4xl mb-1">{pendingLeaves.filter(l => l.leaveType === 'Annual').length}</p>
                 <p className="text-sm opacity-80">pending</p>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-xl">
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg opacity-90">Other Leaves</h3>
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">📝</div>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
                 </div>
                 <p className="text-4xl mb-1">{pendingLeaves.filter(l => l.leaveType !== 'Annual').length}</p>
                 <p className="text-sm opacity-80">pending</p>
@@ -137,7 +149,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
 
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>⚡</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
                 Quick Actions
               </h3>
               <div className="grid md:grid-cols-2 gap-4">
@@ -165,7 +179,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-gray-900 flex items-center gap-2">
-                <span>✅</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 Pending Leave Requests
               </h3>
               <button
@@ -181,7 +197,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
             ) : pendingLeaves.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">✨</span>
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <p className="text-gray-600">No pending leave requests</p>
               </div>
@@ -205,9 +223,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                         </div>
                         <p className="text-gray-900 mb-2">Employee: {leave.employee} (ID: {leave.employee_ID})</p>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>📅 {leave.start_date} → {leave.end_date}</span>
-                          <span>⏱️ {leave.num_days} days</span>
-                          <span>📝 Submitted: {leave.date_of_request}</span>
+                          <span>{leave.start_date} → {leave.end_date}</span>
+                          <span>{leave.num_days} days</span>
+                          <span>Submitted: {leave.date_of_request}</span>
                         </div>
                       </div>
                       <button
@@ -230,7 +248,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>💸</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 Add Deductions
               </h3>
               <div className="max-w-md mb-6">
@@ -247,7 +267,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-6">
                   <h4 className="text-gray-900 mb-2 flex items-center gap-2">
-                    <span>⏰</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                     Missing Hours
                   </h4>
                   <p className="text-gray-600 text-sm mb-4">Deduct for attendance with less than 8 hours</p>
@@ -276,7 +298,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
 
                 <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 rounded-xl p-6">
                   <h4 className="text-gray-900 mb-2 flex items-center gap-2">
-                    <span>📅</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                     Missing Days
                   </h4>
                   <p className="text-gray-600 text-sm mb-4">Deduct for absent days in current month</p>
@@ -305,7 +329,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
 
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl p-6">
                   <h4 className="text-gray-900 mb-2 flex items-center gap-2">
-                    <span>💼</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
                     Unpaid Leave
                   </h4>
                   <p className="text-gray-600 text-sm mb-4">Deduct for approved unpaid leave days</p>
@@ -340,7 +366,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
         {activeSection === 'payroll' && (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-              <span>💰</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               Generate Monthly Payroll
             </h3>
             <p className="text-gray-600 mb-6">Calculate final salary including base salary, bonuses, and deductions</p>
