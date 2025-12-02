@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../../utils/mockData.tsx';
+import { api } from '../../utils/api.tsx';
 
 interface EmployeePart1Props {
   userId: number;
@@ -29,7 +29,7 @@ export function EmployeePart1({ userId }: EmployeePart1Props) {
     }
     setLoading(true);
     try {
-      const result = await mockAPI.getPerformance(userId, semester);
+      const result = await api.getPerformance(userId, semester);
       setPerformanceData(result.data);
       toast.success('Performance data loaded successfully');
     } catch (error: any) {
@@ -42,7 +42,7 @@ export function EmployeePart1({ userId }: EmployeePart1Props) {
   const fetchAttendance = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getAttendance(userId);
+      const result = await api.getAttendance(userId);
       setAttendance(result.data || []);
       toast.success('Attendance records loaded successfully');
     } catch (error: any) {
@@ -55,7 +55,7 @@ export function EmployeePart1({ userId }: EmployeePart1Props) {
   const fetchPayroll = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getLastMonthPayroll(userId);
+      const result = await api.getLastMonthPayroll(userId);
       setPayroll(result.data);
       toast.success('Payroll data loaded successfully');
     } catch (error: any) {
@@ -72,7 +72,7 @@ export function EmployeePart1({ userId }: EmployeePart1Props) {
     }
     setLoading(true);
     try {
-      const result = await mockAPI.getDeductions(userId, parseInt(deductionMonth));
+      const result = await api.getDeductions(userId, parseInt(deductionMonth));
       setDeductions(result.data);
       toast.success('Deductions loaded successfully');
     } catch (error: any) {
@@ -85,7 +85,7 @@ export function EmployeePart1({ userId }: EmployeePart1Props) {
   const fetchLeaveStatus = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getLeaveStatus(userId);
+      const result = await api.getLeaveStatus(userId);
       setLeaveStatus(result.data);
       toast.success('Leave status loaded successfully');
     } catch (error: any) {
@@ -99,7 +99,7 @@ export function EmployeePart1({ userId }: EmployeePart1Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitAnnualLeave(userId, annualLeaveForm.start_date, annualLeaveForm.end_date, annualLeaveForm.replacement_emp ? parseInt(annualLeaveForm.replacement_emp) : null);
+      const result = await api.submitAnnualLeave(userId, annualLeaveForm.start_date, annualLeaveForm.end_date, annualLeaveForm.replacement_emp ? parseInt(annualLeaveForm.replacement_emp) : null);
       toast.success(result.message);
       setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
     } catch (error: any) {

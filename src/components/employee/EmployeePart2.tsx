@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../../utils/mockData.tsx';
+import { api } from '../../utils/api.tsx';
 
 interface EmployeePart2Props {
   userId: number;
@@ -44,7 +44,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
   const fetchPendingApprovals = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getPendingApprovals(userId);
+      const result = await api.getPendingApprovals(userId);
       setPendingApprovals(result.data);
       toast.success('Pending approvals loaded successfully');
     } catch (error: any) {
@@ -58,7 +58,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitAccidentalLeave(userId, accidentalLeaveForm.start_date, accidentalLeaveForm.end_date);
+      const result = await api.submitAccidentalLeave(userId, accidentalLeaveForm.start_date, accidentalLeaveForm.end_date);
       toast.success(result.message);
       setAccidentalLeaveForm({ start_date: '', end_date: '' });
     } catch (error: any) {
@@ -72,7 +72,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitMedicalLeave({ employee_ID: userId, ...medicalLeaveForm });
+      const result = await api.submitMedicalLeave({ employee_ID: userId, ...medicalLeaveForm });
       toast.success(result.message);
       setMedicalLeaveForm({
         start_date: '',
@@ -94,7 +94,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitUnpaidLeave({ employee_ID: userId, ...unpaidLeaveForm });
+      const result = await api.submitUnpaidLeave({ employee_ID: userId, ...unpaidLeaveForm });
       toast.success(result.message);
       setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
     } catch (error: any) {
@@ -108,7 +108,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitCompensationLeave({ employee_ID: userId, ...compensationLeaveForm, replacement_emp: compensationLeaveForm.replacement_emp ? parseInt(compensationLeaveForm.replacement_emp) : null });
+      const result = await api.submitCompensationLeave({ employee_ID: userId, ...compensationLeaveForm, replacement_emp: compensationLeaveForm.replacement_emp ? parseInt(compensationLeaveForm.replacement_emp) : null });
       toast.success(result.message);
       setCompensationLeaveForm({ compensation_date: '', reason: '', date_of_original_workday: '', replacement_emp: '' });
     } catch (error: any) {
@@ -121,7 +121,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
   const approveLeave = async (leaveId: number, status: 'approved' | 'rejected') => {
     setLoading(true);
     try {
-      const result = await mockAPI.approveLeave(userId, leaveId, status);
+      const result = await api.approveLeave(userId, leaveId, status);
       toast.success(result.message);
       fetchPendingApprovals();
     } catch (error: any) {
@@ -135,7 +135,7 @@ export function EmployeePart2({ userId, user }: EmployeePart2Props) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitEvaluation({ evaluator_ID: userId, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) });
+      const result = await api.submitEvaluation({ evaluator_ID: userId, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) });
       toast.success(result.message);
       setEvaluationForm({ employee_ID: '', rating: '5', comments: '', semester: '' });
     } catch (error: any) {

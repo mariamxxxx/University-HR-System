@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../../utils/mockData.tsx';
+import { api } from '../../utils/api.tsx';
 
 export function AdminPart1() {
   const [activeSection, setActiveSection] = useState<string>('employees');
@@ -23,7 +23,7 @@ export function AdminPart1() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getEmployees();
+      const result = await api.getEmployees();
       setEmployees(result.data);
       toast.success('Employees loaded successfully');
     } catch (error: any) {
@@ -36,7 +36,7 @@ export function AdminPart1() {
   const fetchEmployeesPerDept = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getEmployeesPerDept();
+      const result = await api.getEmployeesPerDept();
       setEmployeesPerDept(result.data);
       toast.success('Department statistics loaded successfully');
     } catch (error: any) {
@@ -49,7 +49,7 @@ export function AdminPart1() {
   const fetchRejectedMedicals = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getRejectedMedicals();
+      const result = await api.getRejectedMedicals();
       setRejectedMedicals(result.data);
       toast.success('Rejected medical leaves loaded successfully');
     } catch (error: any) {
@@ -66,7 +66,7 @@ export function AdminPart1() {
 
     setLoading(true);
     try {
-      const result = await mockAPI.removeResignedDeductions();
+      const result = await api.removeResignedDeductions();
       toast.success(result.message);
     } catch (error: any) {
       toast.error(error.message || 'Failed to remove deductions');
@@ -79,7 +79,7 @@ export function AdminPart1() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.updateAttendance(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
+      const result = await api.updateAttendance(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
       toast.success(result.message);
       setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
     } catch (error: any) {
@@ -93,7 +93,7 @@ export function AdminPart1() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.addHoliday(holidayData.name, holidayData.from_date, holidayData.to_date);
+      const result = await api.addHoliday(holidayData.name, holidayData.from_date, holidayData.to_date);
       toast.success(result.message);
       setHolidayData({ name: '', from_date: '', to_date: '' });
     } catch (error: any) {
@@ -110,7 +110,7 @@ export function AdminPart1() {
 
     setLoading(true);
     try {
-      const result = await mockAPI.initiateAttendance();
+      const result = await api.initiateAttendance();
       toast.success(result.message);
     } catch (error: any) {
       toast.error(error.message || 'Failed to initiate attendance');

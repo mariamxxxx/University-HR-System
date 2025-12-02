@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../utils/mockData.tsx';
 import { api } from '../utils/api.tsx';
 import { LeaveBalanceCard } from './LeaveBalanceCard.tsx';
 
@@ -54,7 +53,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
 
   const checkUserRole = async () => {
     try {
-      const result = await mockAPI.isEmployeeApprover(user.employee_ID);
+      const result = await api.isEmployeeApprover(user.employee_ID);
       if (result.success) {
         setIsApprover(result.data.isApprover);
         setUserRole(result.data.role);
@@ -78,9 +77,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     setLoading(true);
     try {
       const [attResult, payResult, statusResult] = await Promise.all([
-        mockAPI.getAttendance(user.employee_ID),
-        mockAPI.getLastMonthPayroll(user.employee_ID),
-        mockAPI.getLeaveStatus(user.employee_ID)
+        api.getAttendance(user.employee_ID),
+        api.getLastMonthPayroll(user.employee_ID),
+        api.getLeaveStatus(user.employee_ID)
       ]);
       setAttendance(attResult.data || []);
       setPayroll(payResult.data || []);
@@ -96,7 +95,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitAnnualLeave(
+      const result = await api.submitAnnualLeave(
         user.employee_ID, 
         annualLeaveForm.start_date, 
         annualLeaveForm.end_date, 
@@ -116,7 +115,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitAccidentalLeave(user.employee_ID, accidentalLeaveForm.start_date, accidentalLeaveForm.end_date);
+      const result = await api.submitAccidentalLeave(user.employee_ID, accidentalLeaveForm.start_date, accidentalLeaveForm.end_date);
       toast.success(result.message);
       setAccidentalLeaveForm({ start_date: '', end_date: '' });
       setSelectedLeaveType('');
@@ -131,7 +130,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitMedicalLeave({ employee_ID: user.employee_ID, ...medicalLeaveForm });
+      const result = await api.submitMedicalLeave({ employee_ID: user.employee_ID, ...medicalLeaveForm });
       toast.success(result.message);
       setMedicalLeaveForm({ start_date: '', end_date: '', type: 'sick', insurance_status: 'yes', disability_details: '', document_description: '', file_name: '' });
       setSelectedLeaveType('');
@@ -146,7 +145,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitUnpaidLeave({ employee_ID: user.employee_ID, ...unpaidLeaveForm });
+      const result = await api.submitUnpaidLeave({ employee_ID: user.employee_ID, ...unpaidLeaveForm });
       toast.success(result.message);
       setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
       setSelectedLeaveType('');
@@ -161,7 +160,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.submitCompensationLeave({ 
+      const result = await api.submitCompensationLeave({ 
         employee_ID: user.employee_ID, 
         ...compensationLeaveForm,
         replacement_emp: parseInt(compensationLeaveForm.replacement_emp)
@@ -377,7 +376,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                   onClick={async () => {
                     setLoading(true);
                     try {
-                      const result = await mockAPI.getAttendance(user.employee_ID);
+                      const result = await api.getAttendance(user.employee_ID);
                       setAttendance(result.data || []);
                       toast.success('Attendance refreshed');
                     } catch (error: any) {
@@ -452,7 +451,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     }
                     setLoading(true);
                     try {
-                      const result = await mockAPI.getDeductions(user.employee_ID, parseInt(deductionMonth));
+                      const result = await api.getDeductions(user.employee_ID, parseInt(deductionMonth));
                       setDeductions(result.data || []);
                       toast.success('Deductions loaded');
                     } catch (error: any) {
@@ -759,7 +758,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                   onClick={async () => {
                     setLoading(true);
                     try {
-                      const result = await mockAPI.getPendingApprovals(user.employee_ID);
+                      const result = await api.getPendingApprovals(user.employee_ID);
                       setPendingApprovals(result.data || []);
                       toast.success('Approvals loaded');
                     } catch (error: any) {
@@ -803,9 +802,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                           onClick={async () => {
                             setLoading(true);
                             try {
-                              const result = await mockAPI.approveLeave(user.employee_ID, approval.Leave_ID, 'approved');
+                              const result = await api.approveLeave(user.employee_ID, approval.Leave_ID, 'approved');
                               toast.success(result.message);
-                              const refreshResult = await mockAPI.getPendingApprovals(user.employee_ID);
+                              const refreshResult = await api.getPendingApprovals(user.employee_ID);
                               setPendingApprovals(refreshResult.data || []);
                             } catch (error: any) {
                               toast.error(error.message);
@@ -821,9 +820,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                           onClick={async () => {
                             setLoading(true);
                             try {
-                              const result = await mockAPI.approveLeave(user.employee_ID, approval.Leave_ID, 'rejected');
+                              const result = await api.approveLeave(user.employee_ID, approval.Leave_ID, 'rejected');
                               toast.success(result.message);
-                              const refreshResult = await mockAPI.getPendingApprovals(user.employee_ID);
+                              const refreshResult = await api.getPendingApprovals(user.employee_ID);
                               setPendingApprovals(refreshResult.data || []);
                             } catch (error: any) {
                               toast.error(error.message);
@@ -869,7 +868,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                   }
                   setLoading(true);
                   try {
-                    const result = await mockAPI.getPerformance(user.employee_ID, semester);
+                    const result = await api.getPerformance(user.employee_ID, semester);
                     setPerformanceData(result.data || []);
                     toast.success('Performance loaded');
                   } catch (error: any) {
@@ -926,7 +925,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const result = await mockAPI.getLastMonthPayroll(user.employee_ID);
+                  const result = await api.getLastMonthPayroll(user.employee_ID);
                   setPayroll(result.data || []);
                   toast.success('Payroll records loaded');
                 } catch (error: any) {
@@ -1001,7 +1000,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               setLoading(true);
               try {
                 // Check if employee exists and is in same department
-                const employeesResult = await mockAPI.getEmployees();
+                const employeesResult = await api.getEmployees();
                 const targetEmployee = employeesResult.data.find((emp: any) => emp.employee_ID === parseInt(evaluationForm.employee_ID));
                 
                 if (!targetEmployee) {
@@ -1016,7 +1015,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                   return;
                 }
                 
-                const result = await mockAPI.submitEvaluation({ evaluator_ID: user.employee_ID, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) });
+                const result = await api.submitEvaluation({ evaluator_ID: user.employee_ID, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) });
                 toast.success(result.message);
                 setEvaluationForm({ employee_ID: '', rating: '5', comments: '', semester: '' });
               } catch (error: any) {

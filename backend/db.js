@@ -1,7 +1,6 @@
 // db.js
 const sql = require("mssql");
 
-// ✅ Update these values with your own SQL login and database
 const config = {
     user: "mariamNodeUser", // SQL login username
     password: "password123", // SQL login password
@@ -16,11 +15,11 @@ const config = {
 const poolPromise = new sql.ConnectionPool(config)
     .connect()
     .then((pool) => {
-        console.log("🎉 Connected to SQL Server!");
+        console.log("Connected to SQL Server!");
         return pool;
     })
     .catch((err) => {
-        console.error("❌ Connection failed:", err);
+        console.error("Connection failed:", err);
         throw err;
     });
 

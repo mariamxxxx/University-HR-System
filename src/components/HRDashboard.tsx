@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../utils/mockData.tsx';
+import { api } from '../utils/api.tsx';
 
 interface HRDashboardProps {
   user: any;
@@ -30,7 +30,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
   const loadPendingLeaves = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getPendingLeaves();
+      const result = await api.getPendingLeaves();
       setPendingLeaves(result.data);
     } catch (error: any) {
       toast.error(error.message || 'Failed to load data');
@@ -42,7 +42,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
   const handleApprove = async (requestId: number, leaveType: string) => {
     setLoading(true);
     try {
-      const result = await mockAPI.hrApproveLeave(requestId, user.employee_ID, leaveType);
+      const result = await api.hrApproveLeave(requestId, user.employee_ID, leaveType);
       toast.success(result.message);
       loadPendingLeaves();
     } catch (error: any) {
@@ -281,7 +281,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                       }
                       setLoading(true);
                       try {
-                        const result = await mockAPI.addDeductionHours(parseInt(employeeIdForDeduction));
+                        const result = await api.addDeductionHours(parseInt(employeeIdForDeduction));
                         toast.success(result.message);
                       } catch (error: any) {
                         toast.error(error.message);
@@ -312,7 +312,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                       }
                       setLoading(true);
                       try {
-                        const result = await mockAPI.addDeductionDays(parseInt(employeeIdForDeduction));
+                        const result = await api.addDeductionDays(parseInt(employeeIdForDeduction));
                         toast.success(result.message);
                       } catch (error: any) {
                         toast.error(error.message);
@@ -343,7 +343,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                       }
                       setLoading(true);
                       try {
-                        const result = await mockAPI.addDeductionUnpaid(parseInt(employeeIdForDeduction));
+                        const result = await api.addDeductionUnpaid(parseInt(employeeIdForDeduction));
                         toast.success(result.message);
                       } catch (error: any) {
                         toast.error(error.message);
@@ -376,7 +376,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
               e.preventDefault();
               setLoading(true);
               try {
-                const result = await mockAPI.generatePayroll(parseInt(payrollForm.employee_ID), payrollForm.from_date, payrollForm.to_date);
+                const result = await api.generatePayroll(parseInt(payrollForm.employee_ID), payrollForm.from_date, payrollForm.to_date);
                 toast.success(result.message);
                 setPayrollForm({ employee_ID: '', from_date: '', to_date: '' });
               } catch (error: any) {

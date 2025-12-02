@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../utils/mockData.tsx';
+import { api } from '../utils/api.tsx';
 
 interface HRLoginProps {
   onLogin: (employee: any) => void;
@@ -17,7 +17,7 @@ export function HRLogin({ onLogin, onBack }: HRLoginProps) {
     setLoading(true);
 
     try {
-      const result = await mockAPI.hrLogin(parseInt(employeeId), password);
+      const result = await api.hrLogin(parseInt(employeeId), password);
 
       if (result.success) {
         onLogin(result.data);

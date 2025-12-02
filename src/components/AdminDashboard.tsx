@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../utils/mockData.tsx';
+import { api } from '../utils/api.tsx';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -33,8 +33,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setLoading(true);
     try {
       const [empResult, deptResult] = await Promise.all([
-        mockAPI.getEmployees(),
-        mockAPI.getEmployeesPerDept()
+        api.getEmployees(),
+        api.getEmployeesPerDept()
       ]);
       setEmployees(empResult.data);
       setEmployeesPerDept(deptResult.data);
@@ -140,7 +140,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     onClick={async () => {
                       setLoading(true);
                       try {
-                        const result = await mockAPI.initiateAttendance();
+                        const result = await api.initiateAttendance();
                         toast.success(result.message);
                       } catch (error: any) {
                         toast.error(error.message);
@@ -157,7 +157,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       if (!confirm('Remove all deductions for resigned employees?')) return;
                       setLoading(true);
                       try {
-                        const result = await mockAPI.removeResignedDeductions();
+                        const result = await api.removeResignedDeductions();
                         toast.success(result.message);
                       } catch (error: any) {
                         toast.error(error.message);
@@ -211,7 +211,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const result = await mockAPI.getEmployees();
+                  const result = await api.getEmployees();
                   setEmployees(result.data);
                   toast.success('Employee list refreshed');
                 } catch (error: any) {
@@ -278,7 +278,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                  const result = await mockAPI.updateAttendance(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
+                  const result = await api.updateAttendance(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
                   toast.success(result.message);
                   setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
                 } catch (error: any) {
@@ -324,7 +324,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                  const result = await mockAPI.addHoliday(holidayData.name, holidayData.from_date, holidayData.to_date);
+                  const result = await api.addHoliday(holidayData.name, holidayData.from_date, holidayData.to_date);
                   toast.success(result.message);
                   setHolidayData({ name: '', from_date: '', to_date: '' });
                 } catch (error: any) {
@@ -366,7 +366,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const result = await mockAPI.getYesterdayAttendance();
+                    const result = await api.getYesterdayAttendance();
                     setYesterdayAttendance(result.data);
                     toast.success('Yesterday\'s attendance loaded');
                   } catch (error: any) {
@@ -425,7 +425,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const result = await mockAPI.getRejectedMedicals();
+                    const result = await api.getRejectedMedicals();
                     setRejectedMedicals(result.data);
                     toast.success('Rejected medical leaves loaded');
                   } catch (error: any) {
@@ -464,7 +464,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                  const result = await mockAPI.removeApprovedLeaves(parseInt(employeeIdForLeaves));
+                  const result = await api.removeApprovedLeaves(parseInt(employeeIdForLeaves));
                   toast.success(result.message);
                   setEmployeeIdForLeaves('');
                 } catch (error: any) {
@@ -502,7 +502,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const result = await mockAPI.getAllPayroll();
+                  const result = await api.getAllPayroll();
                   setAllPayroll(result.data);
                   toast.success('Payroll records loaded');
                 } catch (error: any) {
@@ -565,7 +565,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const result = await mockAPI.getWinterPerformance();
+                  const result = await api.getWinterPerformance();
                   setWinterPerformance(result.data);
                   toast.success('Performance data loaded');
                 } catch (error: any) {
@@ -621,7 +621,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   e.preventDefault();
                   setLoading(true);
                   try {
-                    const result = await mockAPI.replaceEmployee(parseInt(replacementData.Emp1_ID), parseInt(replacementData.Emp2_ID), replacementData.from_date, replacementData.to_date);
+                    const result = await api.replaceEmployee(parseInt(replacementData.Emp1_ID), parseInt(replacementData.Emp2_ID), replacementData.from_date, replacementData.to_date);
                     toast.success(result.message);
                     setReplacementData({ Emp1_ID: '', Emp2_ID: '', from_date: '', to_date: '' });
                   } catch (error: any) {
@@ -677,7 +677,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   e.preventDefault();
                   setLoading(true);
                   try {
-                    const result = await mockAPI.updateEmploymentStatus(parseInt(employeeIdForStatus));
+                    const result = await api.updateEmploymentStatus(parseInt(employeeIdForStatus));
                     toast.success(result.message);
                     setEmployeeIdForStatus('');
                   } catch (error: any) {
@@ -712,7 +712,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     if (!confirm('Remove all attendance during holidays?')) return;
                     setLoading(true);
                     try {
-                      const result = await mockAPI.removeHolidayAttendance();
+                      const result = await api.removeHolidayAttendance();
                       toast.success(result.message);
                     } catch (error: any) {
                       toast.error(error.message);
@@ -728,7 +728,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   e.preventDefault();
                   setLoading(true);
                   try {
-                    const result = await mockAPI.removeDayOff(parseInt(employeeIdForDayOff));
+                    const result = await api.removeDayOff(parseInt(employeeIdForDayOff));
                     toast.success(result.message);
                     setEmployeeIdForDayOff('');
                   } catch (error: any) {

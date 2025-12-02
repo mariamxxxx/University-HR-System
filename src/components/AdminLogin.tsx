@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../utils/mockData.tsx';
+import { api } from '../utils/api.tsx';
 
 interface AdminLoginProps {
   onLogin: (admin: any) => void;
@@ -17,7 +17,7 @@ export function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
     setLoading(true);
 
     try {
-      const result = await mockAPI.adminLogin(adminId, password);
+      const result = await api.adminLogin(adminId, password);
 
       if (result.success) {
         toast.success(result.message);

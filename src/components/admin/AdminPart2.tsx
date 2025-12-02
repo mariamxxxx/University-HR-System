@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { mockAPI } from '../../utils/mockData.tsx';
+import { api } from '../../utils/api.tsx';
 
 export function AdminPart2() {
   const [activeSection, setActiveSection] = useState<string>('yesterday-attendance');
@@ -20,7 +20,7 @@ export function AdminPart2() {
   const fetchYesterdayAttendance = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getYesterdayAttendance();
+      const result = await api.getYesterdayAttendance();
       setYesterdayAttendance(result.data);
       toast.success('Yesterday\'s attendance loaded successfully');
     } catch (error: any) {
@@ -33,7 +33,7 @@ export function AdminPart2() {
   const fetchWinterPerformance = async () => {
     setLoading(true);
     try {
-      const result = await mockAPI.getWinterPerformance();
+      const result = await api.getWinterPerformance();
       setWinterPerformance(result.data);
       toast.success('Winter performance data loaded successfully');
     } catch (error: any) {
@@ -50,7 +50,7 @@ export function AdminPart2() {
 
     setLoading(true);
     try {
-      const result = await mockAPI.removeHolidayAttendance();
+      const result = await api.removeHolidayAttendance();
       toast.success(result.message);
     } catch (error: any) {
       toast.error(error.message || 'Failed to remove holiday attendance');
@@ -63,7 +63,7 @@ export function AdminPart2() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.removeDayOff(parseInt(employeeIdForDayOff));
+      const result = await api.removeDayOff(parseInt(employeeIdForDayOff));
       toast.success(result.message);
       setEmployeeIdForDayOff('');
     } catch (error: any) {
@@ -77,7 +77,7 @@ export function AdminPart2() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.removeApprovedLeaves(parseInt(employeeIdForLeaves));
+      const result = await api.removeApprovedLeaves(parseInt(employeeIdForLeaves));
       toast.success(result.message);
       setEmployeeIdForLeaves('');
     } catch (error: any) {
@@ -91,7 +91,7 @@ export function AdminPart2() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.replaceEmployee(parseInt(replacementData.Emp1_ID), parseInt(replacementData.Emp2_ID), replacementData.from_date, replacementData.to_date);
+      const result = await api.replaceEmployee(parseInt(replacementData.Emp1_ID), parseInt(replacementData.Emp2_ID), replacementData.from_date, replacementData.to_date);
       toast.success(result.message);
       setReplacementData({ Emp1_ID: '', Emp2_ID: '', from_date: '', to_date: '' });
     } catch (error: any) {
@@ -105,7 +105,7 @@ export function AdminPart2() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await mockAPI.updateEmploymentStatus(parseInt(employeeIdForStatus));
+      const result = await api.updateEmploymentStatus(parseInt(employeeIdForStatus));
       toast.success(result.message);
       setEmployeeIdForStatus('');
     } catch (error: any) {
