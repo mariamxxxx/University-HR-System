@@ -34,11 +34,16 @@
             "class-variance-authority": "^0.7.1",
             "clsx": "*",
             "cmdk": "^1.1.1",
+            "cors": "^2.8.5",
+            "dotenv": "^17.2.3",
             "embla-carousel-react": "^8.6.0",
+            "express": "^5.2.1",
             "hono": "*",
             "input-otp": "^1.4.2",
             "lucide-react": "^0.487.0",
+            "mssql": "^12.1.1",
             "next-themes": "^0.4.6",
+            "nodemon": "^3.1.11",
             "react": "^18.3.1",
             "react-day-picker": "^8.10.1",
             "react-dom": "^18.3.1",
@@ -57,6 +62,8 @@
       },
       "scripts": {
             "dev": "vite",
-            "build": "vite build"
+            "build": "vite build",
+            "server": "nodemon backend/server.js",
+            "init-db": "node backend/database/init.js"
       }
 }
