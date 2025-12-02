@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '../utils/api.tsx';
+import { fetchEmployeesFromBackend } from './admin/AdminPart1';
+
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -33,10 +35,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setLoading(true);
     try {
       const [empResult, deptResult] = await Promise.all([
-        api.getEmployees(),
+        fetchEmployeesFromBackend(),
         api.getEmployeesPerDept()
       ]);
-      setEmployees(empResult.data);
+      setEmployees(empResult);
       setEmployeesPerDept(deptResult.data);
     } catch (error: any) {
       toast.error(error.message || 'Failed to load data');
@@ -211,8 +213,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               onClick={async () => {
                 setLoading(true);
                 try {
-                  const result = await api.getEmployees();
-                  setEmployees(result.data);
+                  const result = await fetchEmployeesFromBackend();
+                  setEmployees(result);
                   toast.success('Employee list refreshed');
                 } catch (error: any) {
                   toast.error(error.message);
