@@ -44,13 +44,13 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
         }
       } else if (userType === 'employee') {
         result = await api.employeeLogin(parseInt(userId), password);
-        if (result.success) {
+        if (result.success && result.data) {
           toast.success(`Welcome back, ${result.data.first_name}`);
           onLogin(result.data, 'employee');
         }
       } else {
         result = await api.hrLogin(parseInt(userId), password);
-        if (result.success) {
+        if (result.success && result.data) {
           toast.success(`Welcome to HR Portal, ${result.data.first_name}`);
           onLogin(result.data, 'hr');
         }
@@ -180,7 +180,7 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
               {mode === 'login' ? (
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
-                    <label className="block text-gray-700 mb-2">I am a...</label>
+                    <label className="block text-gray-700 mb-2">I am a(n)...</label>
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"

@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../utils/api.tsx';
 
+const BACKEND_BASE_URL = 'http://localhost:5000';
+
+export const fetchEmployeesFromBackend = async () => {
+  const response = await fetch(`${BACKEND_BASE_URL}/view-employees`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch employees from backend');
+  }
+  return response.json();
+};
+
 export function AdminPart1() {
   const [activeSection, setActiveSection] = useState<string>('employees');
   const [employees, setEmployees] = useState<any[]>([]);
@@ -20,11 +30,13 @@ export function AdminPart1() {
   });
   const [loading, setLoading] = useState(false);
 
+
+  // all employees view
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const result = await api.getEmployees();
-      setEmployees(result.data);
+      const data = await fetchEmployeesFromBackend();
+      setEmployees(data);
       toast.success('Employees loaded successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to fetch employees');
