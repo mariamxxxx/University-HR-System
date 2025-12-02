@@ -51,7 +51,7 @@ Open the Vite dev server URL (defaults to `http://localhost:5173/`). All data is
 
 None are required for the frontend at this stage. If you later swap the mock API for real HTTP calls, add a `.env` file with your base URL and update `src/utils/api.tsx` accordingly.
 
-## Backend Setup (Optional)
+## Backend Setup
 
 1. Install dependencies:
 
