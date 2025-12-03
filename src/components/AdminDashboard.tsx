@@ -202,7 +202,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
         {/* Employees Section */}
         {activeSection === 'employees' && (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 -mx-4 sm:-mx-6 lg:-mx-8">
             <h3 className="text-gray-900 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -235,10 +235,16 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     <tr className="border-b-2 border-gray-200">
                       <th className="text-left py-3 px-4 text-gray-700">ID</th>
                       <th className="text-left py-3 px-4 text-gray-700">Name</th>
-                      <th className="text-left py-3 px-4 text-gray-700">Department</th>
-                      <th className="text-left py-3 px-4 text-gray-700">Status</th>
-                      <th className="text-left py-3 px-4 text-gray-700">Contract</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Gender</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Email</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Address</th>
                       <th className="text-left py-3 px-4 text-gray-700">Experience</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Day Off</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Contract</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Status</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Annual Balance</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Accidental Balance</th>
+
                     </tr>
                   </thead>
                   <tbody>
@@ -246,7 +252,20 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <tr key={emp.employee_ID} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4 text-gray-900">{emp.employee_ID}</td>
                         <td className="py-3 px-4 text-gray-900">{emp.first_name} {emp.last_name}</td>
-                        <td className="py-3 px-4 text-gray-600">{emp.dept_name}</td>
+                        <td className="py-3 px-4 text-gray-600">
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs ${
+                            emp.gender?.toLowerCase() === 'f' ? 'bg-red-100 text-pink-700' :
+                            emp.gender?.toLowerCase() === 'm' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {emp.gender}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-600">{emp.email}</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.address}</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.years_of_experience}y</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.official_day_off}</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.type_of_contract}</td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs ${
                             emp.employment_status === 'active' ? 'bg-green-100 text-green-700' :
@@ -257,8 +276,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             {emp.employment_status}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{emp.type_of_contract}</td>
-                        <td className="py-3 px-4 text-gray-600">{emp.years_of_experience}y</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.annual_balance} days</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.accidental_balance} days</td>
                       </tr>
                     ))}
                   </tbody>
