@@ -439,6 +439,7 @@ export const api = {
   },
 
   // Employee login
+
   employeeLogin: async (employeeId: number, password: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/employee/login`, {
@@ -826,76 +827,58 @@ export const api = {
   },
 
   // Submit annual leave
-  submitAnnualLeave: async (employeeId: number, startDate: string, endDate: string, replacementEmp: number | null) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const employee = mockData.employees.find(e => e.employee_ID === employeeId);
+  //  AW
+  submitAnnualLeave: async (employeeId: number, startDate: string, endDate:string, replacementEmp:number | null)=>{
+      try{
+        if (!replacementEmp){
+          return {success:false, message:'Replacement employee is required'};
+        }
+        const response = await fetch (`${API_BASE_URL}/api/employee/leave/annual`,{
+          method: 'POST',
+          headers: {
+          'Content-type': 'application/json',
+          },
+          body:JSON.stringify({
+          employee_id: employeeId,
+          replacement_emp: replacementEmp,
+          start_date: startDate,
+          end_date: endDate,  
+          }),  });
+      const result = await response.json();
+      if (result.success){
+        return {success: true , message: result.message || 'Annual leave submitted successfully'};
+      }
+      else{
+        return {success: false , message: result.message || 'Failed to submit annual leave'};
+      } }
+      catch (error) {
+      console.error('Submit annual leave error:', error);
+      return { success: false, message: `Failed to connect to server: ${error}` }; } },
     
-    if (!employee) {
-      return { success: false, message: 'Employee not found' };
-    }
-    
-    if (employee.type_of_contract !== 'full_time') {
-      return { success: false, message: 'Only full-time employees can apply for annual leave' };
-    }
-    
-    if (!replacementEmp) {
-      return { success: false, message: 'Replacement employee is required' };
-    }
-    
-    const numDays = Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    
-    if (employee.annual_balance < numDays) {
-      return { success: false, message: 'Insufficient annual leave balance' };
-    }
-    
-    const leave = {
-      request_ID: mockData.counters.leave++,
-      date_of_request: getCurrentDate(),
-      start_date: startDate,
-      end_date: endDate,
-      num_days: numDays,
-      final_approval_status: 'pending',
-      type: 'annual',
-      emp_ID: employeeId,
-      replacement_emp: replacementEmp
-    };
-    
-    mockData.leaves.push(leave);
-    
-    // Add approvals
-    const deanRole = mockData.roles.find(r => r.role_name === 'Dean' && mockData.employees.find(e => e.employee_ID === r.emp_id)?.dept_name === employee.dept_name);
-    if (deanRole) {
-      mockData.approvals.push({ Emp1_ID: deanRole.emp_id, Leave_ID: leave.request_ID, status: 'pending' });
-    }
-    
-    const hrRole = mockData.roles.find(r => r.role_name === `HR_Representative_${employee.dept_name}`);
-    if (hrRole) {
-      mockData.approvals.push({ Emp1_ID: hrRole.emp_id, Leave_ID: leave.request_ID, status: 'pending' });
-    }
-    
-    return { success: true, message: 'Annual leave submitted successfully', data: leave };
-  },
-
   // Get leave status
   getLeaveStatus: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const currentMonth = getCurrentMonth();
-    const currentYear = new Date().getFullYear();
-    
-    const leaves = mockData.leaves
-      .filter(l => {
-        const leaveMonth = new Date(l.start_date).getMonth() + 1;
-        const leaveYear = new Date(l.start_date).getFullYear();
-        return l.emp_ID === employeeId && leaveMonth === currentMonth && leaveYear === currentYear && 
-               (l.type === 'annual' || l.type === 'accidental');
-      })
-      .map(l => ({
-        request_id: l.request_ID,
-        date_of_request: l.date_of_request,
-        status: l.final_approval_status
-      }));
-    
-    return { success: true, data: leaves };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/leave/status/${employeeId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch leave status', data: [] };
+      }
+    } catch (error) {
+      console.error('Get leave status error:', error);
+      return { 
+        success: false, 
+        message: `Failed to connect to server: ${error}`,
+        data: [] 
+      };
+    }
   },
 
   // Submit accidental leave
