@@ -2220,7 +2220,7 @@ values  ('Jack','John','jack.john@guc.edu.eg','123','new cairo',
 'M','Saturday',7,'1234567890123452','active','part_time',
 'Marwan Samir','01234567897',
 NULL,6,'09-01-2025',NULL,'BI'),
-
+--7
 ('Esraa','Ahmed','esraa.ahmedy@guc.edu.eg','5690',
 'New Cairo',
 'F','Saturday',2,'1234567890123453','active','full_time',
@@ -2515,7 +2515,11 @@ values ('10-27-2025','10-30-2025','10-30-2025','pending')
 
 insert into leave (date_of_request,start_date,end_date
 ,final_approval_status)
-values ('09-13-2025','11-13-2025','03-13-2026','rejected')
+values ('12-13-2025','01-13-2026','03-13-2026','rejected')
+--mine
+insert into leave (date_of_request,start_date,end_date
+,final_approval_status)
+values ('12-13-2025','1-13-2026','03-13-2026','rejected')
 
 select * from Leave
 ----------------------------------------
@@ -2529,6 +2533,13 @@ insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
 values (4,11,12)
 insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
 values (5,5,4)
+--mine
+
+insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
+values (23,1,4)
+
+
+
 
 select * from Annual_Leave
 ---------------
@@ -2536,7 +2547,11 @@ insert into Accidental_Leave (request_ID,emp_ID)
 values (6,1)
 insert into Accidental_Leave (request_ID,emp_ID) 
 values (8,3)
+insert into Accidental_Leave (request_ID,emp_ID) 
+values (22,1)
 
+insert into Accidental_Leave (request_ID,emp_ID) 
+values (24,1)
 select * from Accidental_Leave
 ------------------
 insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
