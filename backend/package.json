@@ -16,5 +16,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {}
 }

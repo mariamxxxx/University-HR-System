@@ -1,3 +1,22 @@
+// API configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// Helper function to get stored employee ID
+export const getStoredEmployeeId = (): number | null => {
+  const id = localStorage.getItem('employee_id');
+  return id ? parseInt(id) : null;
+};
+
+// Helper function to store employee ID
+export const setStoredEmployeeId = (id: number): void => {
+  localStorage.setItem('employee_id', id.toString());
+};
+
+// Helper function to clear employee ID (logout)
+export const clearStoredEmployeeId = (): void => {
+  localStorage.removeItem('employee_id');
+};
+
 // Mock data store for prototype testing
 let mockData = {
   employees: [
@@ -421,12 +440,45 @@ export const api = {
 
   // Employee login
   employeeLogin: async (employeeId: number, password: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const employee = mockData.employees.find(e => e.employee_ID === employeeId);
-    if (employee && employee.password === password) {
-      return { success: true, message: 'Login successful', data: employee };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employee_id: employeeId,
+          password: password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Store employee ID for future use
+        setStoredEmployeeId(employeeId);
+        return { 
+          success: true, 
+          message: result.message || 'Login successful', 
+          data: result.data 
+        };
+      } else {
+        return { 
+          success: false, 
+          message: result.message || 'Login failed' 
+        };
+      }
+    } catch (error) {
+      console.error('Employee login error:', error);
+      // Fallback to mock data if backend is not available
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const employee = mockData.employees.find(e => e.employee_ID === employeeId);
+      if (employee && employee.password === password) {
+        setStoredEmployeeId(employeeId);
+        return { success: true, message: 'Login successful (mock)', data: employee };
+      }
+      return { success: false, message: 'Backend unavailable and credentials not found in mock data' };
     }
-    return { success: false, message: employee ? 'Invalid password' : 'Employee not found' };
   },
 
   // HR login
@@ -671,48 +723,106 @@ export const api = {
 
   // Get employee performance
   getPerformance: async (employeeId: number, semester: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const perf = mockData.performance.filter(p => p.emp_ID === employeeId && p.semester === semester);
-    return { success: true, data: perf };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/performance/${employeeId}/${semester}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch performance', data: [] };
+      }
+    } catch (error) {
+      console.error('Get performance error:', error);
+      return { 
+        success: false, 
+        message: `Failed to connect to server: ${error}`,
+        data: [] 
+      };
+    }
   },
 
   // Get employee attendance
   getAttendance: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const employee = mockData.employees.find(e => e.employee_ID === employeeId);
-    if (!employee) {
-      return { success: false, message: 'Employee not found' };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/attendance/${employeeId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch attendance', data: [] };
+      }
+    } catch (error) {
+      console.error('Get attendance error:', error);
+      return { 
+        success: false, 
+        message: `Failed to connect to server: ${error}`,
+        data: [] 
+      };
     }
-    
-    const currentMonth = getCurrentMonth();
-    const attendance = mockData.attendance.filter(a => {
-      const attMonth = new Date(a.date).getMonth() + 1;
-      const isDayOff = a.status === 'absent' && getDayOfWeek(a.date) === employee.official_day_off;
-      return a.emp_ID === employeeId && attMonth === currentMonth && !isDayOff;
-    });
-    
-    return { success: true, data: attendance };
   },
 
   // Get last month payroll
   getLastMonthPayroll: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const lastMonth = getCurrentMonth() - 1;
-    const payroll = mockData.payroll.filter(p => {
-      const payrollMonth = new Date(p.from_date).getMonth() + 1;
-      return p.emp_ID === employeeId && payrollMonth === lastMonth;
-    });
-    return { success: true, data: payroll };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/payroll/${employeeId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch payroll', data: [] };
+      }
+    } catch (error) {
+      console.error('Get payroll error:', error);
+      return { 
+        success: false, 
+        message: `Failed to connect to server: ${error}`,
+        data: [] 
+      };
+    }
   },
 
   // Get deductions
   getDeductions: async (employeeId: number, month: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const deductions = mockData.deductions.filter(d => {
-      const dedMonth = new Date(d.date).getMonth() + 1;
-      return d.emp_ID === employeeId && dedMonth === month && d.type === 'missing_days';
-    });
-    return { success: true, data: deductions };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/deductions/${employeeId}/${month}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch deductions', data: [] };
+      }
+    } catch (error) {
+      console.error('Get deductions error:', error);
+      return { 
+        success: false, 
+        message: `Failed to connect to server: ${error}`,
+        data: [] 
+      };
+    }
   },
 
   // Submit annual leave
