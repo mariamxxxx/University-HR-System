@@ -2654,25 +2654,25 @@ values (5,'Excellent','S25',10)
 
 select * from Performance
 ------------------------------------------------
-insert into Deduction (emp_ID,date,amount,type,
-status,unpaid_ID,attendance_ID)
-values (1,'10-01-2025',1333.33,'missing_days','finalized',null,7)
+-- insert into Deduction (emp_ID,date,amount,type,
+-- status,unpaid_ID,attendance_ID)
+-- values (1,'2025-10-01',1333.33,'missing_days','finalized',null,7)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (1,'10-28-2025',1333.33,'missing_days','pending',null,5)
+values (1,'2025-10-28',1333.33,'missing_days','pending',null,5)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (2,'09-01-2025',30400,'unpaid','finalized',13,null)
+values (2,'2025-09-01',30400,'unpaid','finalized',13,null)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (2,'10-01-2025',14400,'unpaid','finalized',13,null)
+values (2,'2025-10-01',14400,'unpaid','finalized',13,null)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (10,'10-01-2025',3266.66,'missing_hours','finalized',null,null)
+values (10,'2025-10-01',3266.66,'missing_hours','finalized',null,null)
 
 select * from Deduction
 
@@ -2689,7 +2689,9 @@ insert into Payroll (payment_date,final_salary_amount,from_date,to_date,comments
 values ('10-01-2025',52733.34,'09-01-2025','09-30-2025','Missing Hours',0,3266.66,9)
 insert into Payroll (payment_date,final_salary_amount,from_date,to_date,comments,bonus_amount,deductions_amount,emp_ID)
 values ('04-01-2025',276540,'03-01-2025','03-31-2025','Overtime Factor',540,0,11)
-
+--AW
+insert into Payroll (payment_date,final_salary_amount,from_date,to_date,comments,bonus_amount,deductions_amount,emp_ID)
+values ('11-01-2025',38666.67,'10-01-2025','10-30-2025','Has deduction',0,1333.33,1)
 
 select * from Payroll
 

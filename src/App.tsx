@@ -4,6 +4,7 @@ import { UnifiedLogin } from './components/UnifiedLogin';
 import { AdminDashboard } from './components/AdminDashboard';
 import { EmployeeDashboard } from './components/EmployeeDashboard';
 import { HRDashboard } from './components/HRDashboard';
+import { clearStoredEmployeeId } from './utils/api';
 
 export default function App() {
   const [view, setView] = useState<'login' | 'admin-dashboard' | 'employee-dashboard' | 'hr-dashboard'>('login');
@@ -21,6 +22,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    clearStoredEmployeeId(); // Clear stored employee ID on logout
     setCurrentUser(null);
     setView('login');
     toast.success('Logged out successfully');
