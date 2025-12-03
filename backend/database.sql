@@ -2517,6 +2517,15 @@ insert into leave (date_of_request,start_date,end_date
 ,final_approval_status)
 values ('09-13-2025','11-13-2025','03-13-2026','rejected')
 
+insert into leave (date_of_request,start_date,end_date
+,final_approval_status)
+values ('09-20-2025','11-27-2025','03-13-2026','rejected')
+
+insert into leave (date_of_request,start_date,end_date
+,final_approval_status)
+values ('09-20-2025','11-27-2025','03-13-2026','rejected')
+
+
 select * from Leave
 ----------------------------------------
 insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
@@ -2549,7 +2558,13 @@ values (12,1,null,'maternity',3)
 insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
 values (21,1,null,'sick',8)
 
-select * from Medical_Leave
+insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
+values (25,1,null,'maternity',1)
+
+insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
+values (26,1,'blind','maternity',1)
+
+select * from Medical_Leave 
 -----------------
 insert into Unpaid_Leave (request_id,Emp_ID)
 values (13,2)

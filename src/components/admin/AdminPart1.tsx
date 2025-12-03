@@ -12,6 +12,22 @@ export const fetchEmployeesFromBackend = async () => {
   return response.json();
 };
 
+export const fetchEmployeesPerDeptFromBackend = async () => {
+  const response = await fetch(`${BACKEND_BASE_URL}/view-dept`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch employees per department from backend');
+  }
+  return response.json();
+}
+
+export const fetchRejectedMedicalsFromBackend = async () => {
+  const response = await fetch(`${BACKEND_BASE_URL}/view-rejected-medicals`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch rejected medicals from backend');
+  }
+  return response.json();
+}
+
 export function AdminPart1() {
   const [activeSection, setActiveSection] = useState<string>('employees');
   const [employees, setEmployees] = useState<any[]>([]);
@@ -45,11 +61,12 @@ export function AdminPart1() {
     }
   };
 
+  //all employees per dept
   const fetchEmployeesPerDept = async () => {
     setLoading(true);
     try {
-      const result = await api.getEmployeesPerDept();
-      setEmployeesPerDept(result.data);
+      const result = await fetchEmployeesPerDeptFromBackend();
+      setEmployeesPerDept(result);
       toast.success('Department statistics loaded successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to fetch department statistics');
@@ -59,10 +76,10 @@ export function AdminPart1() {
   };
 
   const fetchRejectedMedicals = async () => {
-    setLoading(true);
+  setLoading(true);
     try {
-      const result = await api.getRejectedMedicals();
-      setRejectedMedicals(result.data);
+      const result = await fetchRejectedMedicalsFromBackend();
+      setRejectedMedicals(result);
       toast.success('Rejected medical leaves loaded successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to fetch rejected medical leaves');
