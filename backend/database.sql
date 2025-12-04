@@ -1,8 +1,14 @@
-create DATABASE University_HR_ManagementSystem;
-GO
-USE University_HR_ManagementSystem;
-GO
+-- create DATABASE University_HR_ManagementSystem;
+-- GO
+-- USE University_HR_ManagementSystem;
+-- GO
 
+-- USE master;
+-- ALTER DATABASE [University_HR_ManagementSystem] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+-- DROP DATABASE [University_HR_ManagementSystem];
+
+
+go
 CREATE FUNCTION HRSalary_calculation
 (@employee_ID int) 
 Returns decimal(10,2)
@@ -748,6 +754,7 @@ declare @start_date_acc date
 declare  @end_date_acc date
 declare @date_of_request date
 --declare @difference_between_date_start_date int
+
 ----------------------- Annual Leave -------------------------------------------
 --- check if the balance is greater than 0 and the leave is annual leave -------
 if exists(select 1 from Annual_Leave where request_ID = @request_ID)

@@ -8,7 +8,7 @@ interface HRLoginProps {
 }
 
 export function HRLogin({ onLogin, onBack }: HRLoginProps) {
-  const [employeeId, setEmployeeId] = useState('');
+  const [employee_ID, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -17,7 +17,7 @@ export function HRLogin({ onLogin, onBack }: HRLoginProps) {
     setLoading(true);
 
     try {
-      const result = await api.hrLogin(parseInt(employeeId), password);
+      const result = await api.hrLogin(parseInt(employee_ID), password);
 
       if (result.success) {
         onLogin(result.data);
@@ -57,13 +57,13 @@ export function HRLogin({ onLogin, onBack }: HRLoginProps) {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="employeeId" className="block text-gray-700 mb-2">
+              <label htmlFor="employee_ID" className="block text-gray-700 mb-2">
                 Employee ID
               </label>
               <input
                 type="number"
-                id="employeeId"
-                value={employeeId}
+                id="employee_ID"
+                value={employee_ID}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="Enter employee ID"

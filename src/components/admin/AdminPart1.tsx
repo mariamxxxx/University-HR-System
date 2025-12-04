@@ -17,6 +17,7 @@ export function AdminPart1() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [employeesPerDept, setEmployeesPerDept] = useState<any[]>([]);
   const [rejectedMedicals, setRejectedMedicals] = useState<any[]>([]);
+  const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<number | null>(null);
   const [attendanceData, setAttendanceData] = useState({
     employee_ID: '',
@@ -66,6 +67,46 @@ export function AdminPart1() {
       toast.success('Rejected medical leaves loaded successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to fetch rejected medical leaves');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPendingLeaves = async () => {
+    setLoading(true);
+    try {
+      const result = await api.getPendingLeaves();
+      // api.getPendingLeaves returns { success, data } in mock API
+      if (result && result.success) {
+        setPendingLeaves(result.data);
+      } else if (Array.isArray(result)) {
+        // if it directly returns array (older implementation)
+        setPendingLeaves(result);
+      } else {
+        setPendingLeaves([]);
+      }
+      toast.success('Pending leaves loaded successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to fetch pending leaves');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveReject = async (requestId: number, hrId: number, leaveType: string, action: 'approve' | 'reject') => {
+    setLoading(true);
+    try {
+      // hrApproveLeave expects requestId, hrId, leaveType and calls backend endpoint
+      const result = await api.hrApproveLeave(requestId, hrId, leaveType);
+      if (result && result.success) {
+        toast.success(result.message || `Leave ${action}d successfully`);
+      } else {
+        toast.error(result?.message || `Failed to ${action} leave`);
+      }
+      // refresh pending leaves
+      await fetchPendingLeaves();
+    } catch (error: any) {
+      toast.error(error.message || `Failed to ${action} leave`);
     } finally {
       setLoading(false);
     }
@@ -138,6 +179,8 @@ export function AdminPart1() {
       fetchEmployeesPerDept();
     } else if (activeSection === 'rejected-medicals') {
       fetchRejectedMedicals();
+    } else if (activeSection === 'pending-leaves') {
+      fetchPendingLeaves();
     }
   }, [activeSection]);
 
@@ -214,6 +257,16 @@ export function AdminPart1() {
         >
           <div className="text-sm">Initiate Attendance</div>
         </button>
+        <button
+          onClick={() => setActiveSection('pending-leaves')}
+          className={`p-4 rounded-lg border-2 transition-all ${
+            activeSection === 'pending-leaves'
+              ? 'border-blue-600 bg-blue-50 text-blue-700'
+              : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <div className="text-sm">Pending Leaves</div>
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -282,6 +335,61 @@ export function AdminPart1() {
                     <p className="text-blue-600 text-sm mt-1">employees</p>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSection === 'pending-leaves' && (
+          <div>
+            <h3 className="text-gray-900 mb-4">Pending Leaves</h3>
+            {loading ? (
+              <p className="text-gray-600">Loading...</p>
+            ) : pendingLeaves.length === 0 ? (
+              <p className="text-gray-600">No pending leaves found</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-gray-700">Request ID</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Employee</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Type</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Start Date</th>
+                      <th className="text-left py-3 px-4 text-gray-700">End Date</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Days</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingLeaves.map((l) => (
+                      <tr key={l.request_ID} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-gray-900">{l.request_ID}</td>
+                        <td className="py-3 px-4 text-gray-900">{l.employee || l.emp_ID}</td>
+                        <td className="py-3 px-4 text-gray-600">{(l.leaveType || l.type || '').toString()}</td>
+                        <td className="py-3 px-4 text-gray-600">{l.start_date}</td>
+                        <td className="py-3 px-4 text-gray-600">{l.end_date}</td>
+                        <td className="py-3 px-4 text-gray-600">{l.num_days}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleApproveReject(l.request_ID, /* hrId */ parseInt(localStorage.getItem('employee_id') || '0'), (l.type||l.leaveType||'annual'), 'approve')}
+                              className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleApproveReject(l.request_ID, /* hrId */ parseInt(localStorage.getItem('employee_id') || '0'), (l.type||l.leaveType||'annual'), 'reject')}
+                              className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
