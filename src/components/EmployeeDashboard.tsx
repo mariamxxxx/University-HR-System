@@ -21,7 +21,10 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const [semester, setSemester] = useState('');
+  const [performanceError, setPerformanceError] = useState('');
   const [deductionMonth, setDeductionMonth] = useState('');
+  const [deductionsLoaded, setDeductionsLoaded] = useState(false);
+  const [leaveStatusLoaded, setLeaveStatusLoaded] = useState(false);
   
   // Leave application state
   const [selectedLeaveType, setSelectedLeaveType] = useState<string>('');
@@ -401,7 +404,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     <tbody>
                       {attendance.map((att) => (
                         <tr key={att.attendance_ID} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4 text-gray-900">{att.date}</td>
+                          <td className="py-3 px-4 text-gray-900">{new Date(att.date).toLocaleDateString()}</td>
                           <td className="py-3 px-4 text-gray-600">{att.check_in_time || 'N/A'}</td>
                           <td className="py-3 px-4 text-gray-600">{att.check_out_time || 'N/A'}</td>
                           <td className="py-3 px-4 text-gray-600">{att.total_duration ? `${att.total_duration} mins` : 'N/A'}</td>
@@ -444,9 +447,11 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       return;
                     }
                     setLoading(true);
+                    setDeductionsLoaded(false);
                     try {
                       const result = await api.getDeductions(user.employee_ID, parseInt(deductionMonth));
                       setDeductions(result.data || []);
+                      setDeductionsLoaded(true);
                       toast.success('Deductions loaded');
                     } catch (error: any) {
                       toast.error(error.message);
@@ -454,7 +459,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       setLoading(false);
                     }
                   }}
-                  className="bg-indigo-500 text-white px-6 py-3 rounded-xl hover:bg-indigo-600 transition-colors"
+                  className="bg-blue-900 text-white px-6 py-3 rounded-xl hover:bg-blue-900 transition-colors"
                 >
                   Load Deductions
                 </button>
@@ -473,7 +478,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </div>
                   ))}
                 </div>
-              ) : deductionMonth ? (
+              ) : deductionsLoaded ? (
                 <div className="text-center py-8">
                   <p className="text-gray-600">No absence deductions found for the given month</p>
                 </div>
@@ -500,7 +505,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </div>
                     <h4 className="text-gray-900 mb-2">Annual Leave</h4>
                     <p className="text-sm text-gray-600">Planned vacation time</p>
-                    <p className="text-xs text-gray-500 mt-2">{user.annual_balance} days available</p>
+                    <p className="text-xs font-bold text-green-600 mt-2">{user.annual_balance} days available</p>
                   </button>
 
                   <button
@@ -514,7 +519,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </div>
                     <h4 className="text-gray-900 mb-2">Accidental Leave</h4>
                     <p className="text-sm text-gray-600">Emergency leave (48hr window)</p>
-                    <p className="text-xs text-gray-500 mt-2">{user.accidental_balance} days available</p>
+                    <p className="text-xs font-bold text-green-600 mt-2">{user.accidental_balance} days available</p>
                   </button>
 
                   <button
@@ -562,18 +567,22 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-gray-900 text-xl">
-                    {selectedLeaveType.charAt(0).toUpperCase() + selectedLeaveType.slice(1)} Leave Application
-                  </h3>
+                <div className="flex items-center gap-4 mb-6">
                   <button
                     onClick={() => setSelectedLeaveType('')}
-                    className="text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-300 rounded-lg"
+                    className="bg-indigo-500 text-white hover:bg-indigo-600 p-2 rounded-lg"
                   >
-                    Back to Selection
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
+                  <h3 className="text-gray-900 text-2xl font-bold">
+                    {selectedLeaveType.charAt(0).toUpperCase() + selectedLeaveType.slice(1)} Leave Application
+                  </h3>
                 </div>
 
+                <div className="flex justify-center">
+                  <div className="w-full max-w-2xl">
                 
 
                 {selectedLeaveType === 'accidental' && (
@@ -730,11 +739,13 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </button>
                   </form>
                 )}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* Leave Status Section */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mt-6">
+            {!selectedLeaveType && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mt-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -744,9 +755,11 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               <button
                 onClick={async () => {
                   setLoading(true);
+                  setLeaveStatusLoaded(false);
                   try {
                     const result = await api.getLeaveStatus(user.employee_ID);
                     setLeaveStatus(result.data || []);
+                    setLeaveStatusLoaded(true);
                     toast.success('Leave status loaded');
                   } catch (error: any) {
                     toast.error(error.message);
@@ -758,8 +771,8 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               >
                 Load Leave Status
               </button>
-              {leaveStatus.length === 0 ? (
-                <p className="text-gray-600">No leave requests found for this month. Click "Load Leave Status" to refresh.</p>
+              {leaveStatusLoaded && (leaveStatus.length === 0 ? (
+                <p className="text-gray-600">No leave requests found for this month.</p>
               ) : (
                 <div className="space-y-3">
                   {leaveStatus.map((leave) => (
@@ -782,8 +795,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -938,17 +952,16 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     return;
                   }
                   setLoading(true);
+                  setPerformanceError('');
                   try {
                     const result = await api.getPerformance(user.employee_ID, semester);
                     console.log('Performance result:', result);
                     setPerformanceData(result.data || []);
-                    if (result.data && result.data.length > 0) {
-                      toast.success(`Found ${result.data.length} performance record(s)`);
-                    } else {
-                      toast.info('No performance records found for this semester');
+                    if (result.data && result.data.length === 0) {
+                      setPerformanceError('No performance found for the given semester');
                     }
                   } catch (error: any) {
-                    toast.error(error.message);
+                    setPerformanceError(error.message);
                   } finally {
                     setLoading(false);
                   }
@@ -958,6 +971,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                 Load Performance
               </button>
             </div>
+            {performanceError && (
+              <p className="text-red-600 text-sm mb-4">{performanceError}</p>
+            )}
             {performanceData.length === 0 ? (
               <p className="text-gray-600"></p>
             ) : (
