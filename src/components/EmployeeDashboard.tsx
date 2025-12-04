@@ -54,18 +54,25 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
   const checkUserRole = async () => {
     try {
       // Prefer roles returned at login (faster, avoids extra network call)
+      const approverRoles = ['President', 'Vice Dean', 'Dean'];
       if (user && Array.isArray(user.roles) && user.roles.length > 0) {
         const roles = user.roles as string[];
-        const approver = roles.some(r => ['Dean', 'Vice Dean', 'President'].includes(r));
+        // user.roles are expected ordered by rank ASC (highest privilege first)
+        const approverRole = roles.find(r => approverRoles.includes(r)) || null;
+        const approver = approverRole !== null;
         setIsApprover(approver);
-        setUserRole(roles[0] || null);
+        // Display the approver role (President/Vice Dean/Dean) if present, otherwise use the primary role
+        setUserRole(approverRole || roles[0] || null);
         return;
       }
 
       const result = await api.isEmployeeApprover(user.employee_ID);
       if (result.success) {
-        setIsApprover(result.data.isApprover);
-        setUserRole(result.data.role);
+        // result.data.role may be null or a primary role; prefer checking isApprover
+        const roles = result.data.roles || (result.data.role ? [result.data.role] : []);
+        const approverRole = roles.find((r: string) => approverRoles.includes(r)) || null;
+        setIsApprover(Boolean(result.data.isApprover) || approverRole !== null);
+        setUserRole(approverRole || result.data.role || null);
       }
     } catch (error) {
       console.error('Error checking role:', error);
@@ -110,11 +117,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
         annualLeaveForm.end_date, 
         annualLeaveForm.replacement_emp ? parseInt(annualLeaveForm.replacement_emp) : null
       );
-      toast.success(result.message);
-      setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit annual leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -125,11 +136,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     setLoading(true);
     try {
       const result = await api.submitAccidentalLeave(user.employee_ID, accidentalLeaveForm.start_date, accidentalLeaveForm.end_date);
-      toast.success(result.message);
-      setAccidentalLeaveForm({ start_date: '', end_date: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setAccidentalLeaveForm({ start_date: '', end_date: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit accidental leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -140,11 +155,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     setLoading(true);
     try {
       const result = await api.submitMedicalLeave({ employee_ID: user.employee_ID, ...medicalLeaveForm });
-      toast.success(result.message);
-      setMedicalLeaveForm({ start_date: '', end_date: '', type: 'sick', insurance_status: 'yes', disability_details: '', document_description: '', file_name: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setMedicalLeaveForm({ start_date: '', end_date: '', type: 'sick', insurance_status: 'yes', disability_details: '', document_description: '', file_name: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit medical leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -155,11 +174,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     setLoading(true);
     try {
       const result = await api.submitUnpaidLeave({ employee_ID: user.employee_ID, ...unpaidLeaveForm });
-      toast.success(result.message);
-      setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit unpaid leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -174,11 +197,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
         ...compensationLeaveForm,
         replacement_emp: parseInt(compensationLeaveForm.replacement_emp)
       });
-      toast.success(result.message);
-      setCompensationLeaveForm({ compensation_date: '', reason: '', date_of_original_workday: '', replacement_emp: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setCompensationLeaveForm({ compensation_date: '', reason: '', date_of_original_workday: '', replacement_emp: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit compensation leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -737,7 +764,6 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               </svg>
               Pending Approvals
             </h3>
-            <p className="text-gray-600 text-sm mb-4">As a {userRole}, approve or reject leave requests</p>
             
             {/* Filters and Sort */}
             <div className="flex gap-4 mb-6">
@@ -1024,15 +1050,18 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Evaluate Employee (Dean Only - Same Department)
+              Evaluate Employee 
             </h3>
             <p className="text-gray-600 text-sm mb-4">As a Dean, you can only evaluate employees within your department: {user.dept_name}</p>
             <form onSubmit={async (e) => {
               e.preventDefault();
               setLoading(true);
               try {
+                console.log('Submitting evaluation:', evaluationForm);
+                
                 // Check if employee exists and is in same department
                 const employeesResult = await api.getEmployees();
+                console.log('Employees result:', employeesResult);
                 const targetEmployee = employeesResult.data.find((emp: any) => emp.employee_ID === parseInt(evaluationForm.employee_ID));
                 
                 if (!targetEmployee) {
@@ -1047,11 +1076,21 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                   return;
                 }
                 
-                const result = await api.submitEvaluation({ evaluator_ID: user.employee_ID, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) });
+                const submitData = { evaluator_ID: user.employee_ID, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) };
+                console.log('Submitting to API:', submitData);
+                const result = await api.submitEvaluation(submitData);
+                console.log('API result:', result);
+                
+                if (!result.success) {
+                  toast.error(result.message || 'Failed to submit evaluation');
+                  setLoading(false);
+                  return;
+                }
                 toast.success(result.message);
                 setEvaluationForm({ employee_ID: '', rating: '5', comments: '', semester: '' });
               } catch (error: any) {
-                toast.error(error.message);
+                console.error('Evaluation form error:', error);
+                toast.error(error.message || 'An error occurred');
               } finally {
                 setLoading(false);
               }

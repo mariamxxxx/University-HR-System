@@ -46,13 +46,18 @@ app.post("/api/employee/login", async (req, res) => {
                     WHERE employee_id = @employee_ID
                 `);
 
-            if (employeeResult.recordset.length > 0) {
-                console.log(`Login successful for: ${employeeResult.recordset[0].first_name} ${employeeResult.recordset[0].last_name}`);
-                // Fetch roles for this employee and include them in the response
+            if (employeeResult.recordset.length > 0) { //recordset is the data returned from the query and has the employee info >0 means we found a matching employee
+                console.log(`Login successful for: ${employeeResult.recordset[0].first_name} ${employeeResult.recordset[0].last_name}`); //the $ is used to insert variables into strings
+                // get roles for this employee and include them in the response
+                // Get roles ordered by Role.rank so the highest role is first
                 const rolesResult = await pool
                     .request()
                     .input('employee_ID', sql.Int, employee_id)
-                    .query('SELECT role_name FROM Employee_Role WHERE emp_ID = @employee_ID');
+                    .query(`SELECT ER.role_name, R.rank
+                            FROM Employee_Role ER
+                            LEFT JOIN Role R ON ER.role_name = R.role_name
+                            WHERE ER.emp_ID = @employee_ID
+                            ORDER BY R.rank ASC`); // this query gets the roles for the emp ordered by rank (1 is the highest)
 
                 const roles = rolesResult.recordset.map(r => r.role_name);
                 const responseData = { ...employeeResult.recordset[0], roles };
@@ -112,7 +117,23 @@ app.get("/view-employees", async (req, res) => {
         const pool = await poolPromise;
         const result = await pool
             .request()
-            .query("SELECT * FROM allEmployeeProfiles");
+            .query(`
+                SELECT 
+                    employee_id as employee_ID, 
+                    first_name, 
+                    last_name, 
+                    gender, 
+                    email, 
+                    address,
+                    years_of_experience, 
+                    official_day_off,
+                    type_of_contract,
+                    employment_status,
+                    annual_balance, 
+                    accidental_balance,
+                    dept_name
+                FROM Employee
+            `);
         res.json(result.recordset);
     } catch (err) {
         console.error("Error fetching employees:", err);
@@ -270,17 +291,22 @@ app.get("/api/employee/payroll/:employeeId", async (req, res) => {
 ////////////////////////////////////////ROKAIA////////////////////////////////////////
 
 // Get roles for an employee and whether they are an approver (Dean/Vice Dean/President)
-app.get('/api/employee/roles/:employeeId', async (req, res) => {
+app.get('/api/employee/roles/:employeeId', async (req, res) => { //get just gets the data with no modification 
     const { employeeId } = req.params;
     try {
         const pool = await poolPromise;
+        // Join with Role to get rank and order by rank ASC so highest-ranked (lowest rank number) appears first
         const result = await pool
             .request()
             .input('employee_ID', sql.Int, parseInt(employeeId))
-            .query('SELECT role_name FROM Employee_Role WHERE emp_ID = @employee_ID');
+            .query(`SELECT ER.role_name, R.rank
+                    FROM Employee_Role ER
+                    LEFT JOIN Role R ON ER.role_name = R.role_name
+                    WHERE ER.emp_ID = @employee_ID
+                    ORDER BY R.rank ASC`);
 
         const roles = result.recordset.map(r => r.role_name);
-        const primaryRole = roles.length > 0 ? roles[0] : null;
+        const primaryRole = roles.length > 0 ? roles[0] : null; // first item is highest role
         const isApprover = roles.some(r => ['Dean', 'Vice Dean', 'President'].includes(r));
 
         res.json({ success: true, data: { roles, isApprover, role: primaryRole } });
@@ -292,8 +318,8 @@ app.get('/api/employee/roles/:employeeId', async (req, res) => {
 
 
 // Submit medical leave
-app.post("/submit-medical-leave", async (req, res) => { // /submit...is the api url
-    const { //inputs from frontend or extracting from the frontend
+app.post("/submit-medical-leave", async (req, res) => { // (/submit...) is the api url, post is used because it CREATES a new record(leave)
+    const { //inputs from frontend or extracting from the frontend 
         employee_ID, 
         start_date, 
         end_date, 
@@ -318,8 +344,8 @@ app.post("/submit-medical-leave", async (req, res) => { // /submit...is the api 
             .input("file_name", sql.VarChar(50), file_name)
             .execute("Submit_medical"); //this calls the stored proc in the db.sql file 
 
-        res.json({ success: true, message: "Medical leave submitted successfully" }); // send success response to frontend
-    } catch (err) { //ERROR HANDLING
+        res.json({ success: true, message: "Medical leave submitted successfully!" }); // send success response to frontend
+    } catch (err) { //handle error
         console.error("Error submitting medical leave:", err);
         res.status(500).json({ error: "Failed to submit medical leave", details: err.message });
     }
@@ -369,6 +395,84 @@ app.post("/submit-accidental-leave", async (req, res) => {
         res.status(500).json({ error: "Failed to submit accidental leave", details: err.message });
     }
 });
+
+// Submit annual leave
+app.post("/submit-annual-leave", async (req, res) => {
+    const {
+        employee_ID,
+        start_date,
+        end_date,
+        replacement_emp
+    } = req.body;
+
+    console.log(`Annual leave submission - Employee: ${employee_ID}, Dates: ${start_date} to ${end_date}, Replacement: ${replacement_emp}`);
+
+    // Validate required fields
+    if (!employee_ID || !start_date || !end_date || !replacement_emp) {
+        console.log("Missing required fields");
+        return res.status(400).json({ 
+            error: "Missing required fields", 
+            details: "employee_ID, start_date, end_date, and replacement_emp are required" 
+        });
+    }
+
+    try {
+        const pool = await poolPromise;
+        
+        // Check employee's annual leave balance
+        const employeeResult = await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .query("SELECT annual_balance, type_of_contract FROM Employee WHERE employee_id = @employee_ID");
+        
+        if (employeeResult.recordset.length === 0) {
+            console.log(`Employee ${employee_ID} not found`);
+            return res.status(404).json({ error: "Employee not found" });
+        }
+
+        const employee = employeeResult.recordset[0];
+        
+        if (employee.type_of_contract !== 'full_time') {
+            console.log(`Employee ${employee_ID} is not full-time`);
+            return res.status(400).json({ error: "Only full-time employees can apply for annual leave" });
+        }
+
+        const numDays = Math.floor((new Date(end_date) - new Date(start_date)) / (1000 * 60 * 60 * 24)) + 1;
+
+        if (employee.annual_balance < numDays) {
+            console.log(`Insufficient balance: ${employee.annual_balance} < ${numDays}`);
+            return res.status(400).json({ 
+                error: `Insufficient annual leave balance. You have ${employee.annual_balance} day(s) remaining but requested ${numDays} day(s).` 
+            });
+        }
+
+        // Check replacement employee exists
+        const replacementResult = await pool
+            .request()
+            .input("replacement_emp", sql.Int, replacement_emp)
+            .query("SELECT employee_id FROM Employee WHERE employee_id = @replacement_emp");
+        
+        if (replacementResult.recordset.length === 0) {
+            console.log(`Replacement employee ${replacement_emp} not found`);
+            return res.status(404).json({ error: `Replacement employee ${replacement_emp} not found` });
+        }
+
+        const result = await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .input("replacement_emp", sql.Int, replacement_emp)
+            .input("start_date", sql.Date, start_date)
+            .input("end_date", sql.Date, end_date)
+            .execute("Submit_annual");
+
+        console.log(`Annual leave submitted successfully for employee ${employee_ID}`);
+        res.json({ success: true, message: "Annual leave submitted successfully" });
+    } catch (err) {
+        console.error("Error submitting annual leave:", err);
+        res.status(500).json({ error: "Failed to submit annual leave", details: err.message });
+    }
+});
+
 //submit unpaid leave
 app.post("/submit-unpaid-leave", async (req, res) => {
     const{
@@ -472,20 +576,155 @@ app.post("/approve-annual-leave", async (req, res) => {
 app.post("/evaluate-employee", async (req, res) => {
     const { employee_ID, rating, comment, semester } = req.body;
     
+    console.log(`Evaluating employee ${employee_ID}: rating=${rating}, comment=${comment}, semester=${semester}`);
+    
+    // Validation
+    if (!employee_ID || !rating || semester === undefined) {
+        return res.status(400).json({ 
+            error: "Missing required fields", 
+            details: "employee_ID, rating, and semester are required" 
+        });
+    }
+    
+    if (isNaN(parseInt(employee_ID)) || isNaN(parseInt(rating))) {
+        return res.status(400).json({ 
+            error: "Invalid data types", 
+            details: "employee_ID and rating must be numbers" 
+        });
+    }
+    
     try {
         const pool = await poolPromise;
-        await pool
+        const result = await pool
             .request()
-            .input("employee_ID", sql.Int, employee_ID)
-            .input("rating", sql.Int, rating)
-            .input("comment", sql.VarChar(50), comment)
-            .input("semester", sql.Char(3), semester)
+            .input("employee_ID", sql.Int, parseInt(employee_ID))
+            .input("rating", sql.Int, parseInt(rating))
+            .input("comment", sql.VarChar(50), comment || '')
+            .input("semester", sql.Char(3), (semester || '').trim())
             .execute("Dean_andHR_Evaluation");
 
-        res.json({ success: true, message: "Employee evaluation submitted successfully" });
+        console.log(`Evaluation inserted successfully for employee ${employee_ID}`);
+        
+        // Verify the evaluation was saved by querying it back
+        const verify = await pool
+            .request()
+            .input("employee_ID", sql.Int, parseInt(employee_ID))
+            .query("SELECT TOP 1 * FROM Performance WHERE emp_ID = @employee_ID ORDER BY performance_ID DESC");
+        
+        console.log(`Verification query result:`, verify.recordset);
+
+        res.json({ success: true, message: "Employee evaluation submitted successfully", data: verify.recordset[0] || null });
     } catch (err) {
-        console.error("Error submitting evaluation:", err);
-        res.status(500).json({ error: "Failed to submit evaluation", details: err.message });
+        console.error("Error submitting evaluation:", err.message);
+        console.error("SQL Error details:", err);
+        res.status(500).json({ 
+            error: "Failed to submit evaluation", 
+            details: err.message,
+            errorNumber: err.number
+        });
+    }
+});
+
+// Get pending approvals for a Dean/VP/President
+app.get("/api/pending-approvals/:employeeId", async (req, res) => {
+    const { employeeId } = req.params;
+    console.log(`Fetching pending approvals for employee: ${employeeId}`);
+
+    try {
+        const pool = await poolPromise;
+        
+        // Get the approver's department
+        const approverResult = await pool
+            .request()
+            .input("employee_ID", sql.Int, parseInt(employeeId))
+            .query("SELECT dept_name FROM Employee WHERE employee_id = @employee_ID");
+        
+        if (approverResult.recordset.length === 0) {
+            console.log(`Employee ${employeeId} not found`);
+            return res.status(404).json({ error: "Approver not found" });
+        }
+        
+        const approverDept = approverResult.recordset[0].dept_name;
+        console.log(`Approver department: ${approverDept}`);
+        
+        // Get all leave requests (unpaid and annual) from employees in the same department that are pending
+        const result = await pool
+            .request()
+            .input("dept_name", sql.VarChar(50), approverDept)
+            .input("approver_ID", sql.Int, parseInt(employeeId))
+            .query(`
+                SELECT 
+                    L.request_ID as Leave_ID,
+                    L.start_date,
+                    L.end_date,
+                    L.num_days,
+                    L.final_approval_status,
+                    E.employee_id as Emp_ID,
+                    E.first_name,
+                    E.last_name,
+                    E.dept_name,
+                    EAL.status as approval_status,
+                    'unpaid' as leave_type,
+                    NULL as replacement_emp
+                FROM Leave L
+                INNER JOIN Unpaid_Leave U ON L.request_ID = U.request_ID
+                INNER JOIN Employee E ON U.Emp_ID = E.employee_id
+                INNER JOIN Employee_Approve_Leave EAL ON L.request_ID = EAL.leave_ID
+                WHERE E.dept_name = @dept_name
+                    AND EAL.Emp1_ID = @approver_ID
+                    AND EAL.status = 'Pending'
+                    AND L.final_approval_status = 'Pending'
+                
+                UNION ALL
+                
+                SELECT 
+                    L.request_ID as Leave_ID,
+                    L.start_date,
+                    L.end_date,
+                    L.num_days,
+                    L.final_approval_status,
+                    E.employee_id as Emp_ID,
+                    E.first_name,
+                    E.last_name,
+                    E.dept_name,
+                    EAL.status as approval_status,
+                    'annual' as leave_type,
+                    A.replacement_emp
+                FROM Leave L
+                INNER JOIN Annual_Leave A ON L.request_ID = A.request_ID
+                INNER JOIN Employee E ON A.Emp_ID = E.employee_id
+                INNER JOIN Employee_Approve_Leave EAL ON L.request_ID = EAL.leave_ID
+                WHERE E.dept_name = @dept_name
+                    AND EAL.Emp1_ID = @approver_ID
+                    AND EAL.status = 'Pending'
+                    AND L.final_approval_status = 'Pending'
+                
+                ORDER BY Leave_ID DESC
+            `);
+        
+        console.log(`Found ${result.recordset.length} pending approvals for employee ${employeeId}`);
+        console.log("Approval records:", result.recordset);
+        
+        const approvals = result.recordset.map(row => ({
+            Leave_ID: row.Leave_ID,
+            Emp1_ID: parseInt(employeeId),
+            Emp_ID: row.Emp_ID,
+            requestor: `${row.first_name} ${row.last_name}`,
+            leave: {
+                start_date: row.start_date,
+                end_date: row.end_date,
+                num_days: row.num_days,
+                type: row.leave_type,
+                replacement_emp: row.replacement_emp
+            },
+            leaveType: row.leave_type === 'annual' ? 'Annual Leave' : 'Unpaid Leave',
+            status: row.approval_status
+        }));
+        
+        res.json({ success: true, data: approvals });
+    } catch (err) {
+        console.error("Error fetching pending approvals:", err);
+        res.status(500).json({ error: "Failed to fetch pending approvals", details: err.message });
     }
 });
 

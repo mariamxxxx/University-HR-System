@@ -500,8 +500,17 @@ export const api = {
 
   // Get all employees
   getEmployees: async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { success: true, data: mockData.employees };
+    try {
+      const response = await fetch(`${API_BASE_URL}/view-employees`);
+      if (!response.ok) throw new Error('Failed to fetch employees');
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error('getEmployees error:', error);
+      // fallback to mock
+      await new Promise(resolve => setTimeout(resolve, 300));
+      return { success: true, data: mockData.employees };
+    }
   },
 
   // Get employees per department
@@ -827,53 +836,77 @@ export const api = {
 
   // Submit annual leave
   submitAnnualLeave: async (employeeId: number, startDate: string, endDate: string, replacementEmp: number | null) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const employee = mockData.employees.find(e => e.employee_ID === employeeId);
-    
-    if (!employee) {
-      return { success: false, message: 'Employee not found' };
+    try {
+      const response = await fetch(`${API_BASE_URL}/submit-annual-leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_ID: employeeId,
+          start_date: startDate,
+          end_date: endDate,
+          replacement_emp: replacementEmp
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const errorMsg = err.error || err.message || 'Failed to submit annual leave';
+        return { success: false, message: errorMsg };
+      }
+
+      const result = await response.json().catch(() => ({}));
+      return { success: true, message: result.message || 'Annual leave submitted successfully', data: result.data || null };
+    } catch (error: any) {
+      console.error('submitAnnualLeave error:', error);
+      // fallback to mock
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const employee = mockData.employees.find(e => e.employee_ID === employeeId);
+      
+      if (!employee) {
+        return { success: false, message: 'Employee not found' };
+      }
+      
+      if (employee.type_of_contract !== 'full_time') {
+        return { success: false, message: 'Only full-time employees can apply for annual leave' };
+      }
+      
+      if (!replacementEmp) {
+        return { success: false, message: 'Replacement employee is required' };
+      }
+      
+      const numDays = Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      if (employee.annual_balance < numDays) {
+        return { success: false, message: 'Insufficient annual leave balance' };
+      }
+      
+      const leave = {
+        request_ID: mockData.counters.leave++,
+        date_of_request: getCurrentDate(),
+        start_date: startDate,
+        end_date: endDate,
+        num_days: numDays,
+        final_approval_status: 'pending',
+        type: 'annual',
+        emp_ID: employeeId,
+        replacement_emp: replacementEmp
+      };
+      
+      mockData.leaves.push(leave);
+      
+      // Add approvals
+      const deanRole = mockData.roles.find(r => r.role_name === 'Dean' && mockData.employees.find(e => e.employee_ID === r.emp_id)?.dept_name === employee.dept_name);
+      if (deanRole) {
+        mockData.approvals.push({ Emp1_ID: deanRole.emp_id, Leave_ID: leave.request_ID, status: 'pending' });
+      }
+      
+      const hrRole = mockData.roles.find(r => r.role_name === `HR_Representative_${employee.dept_name}`);
+      if (hrRole) {
+        mockData.approvals.push({ Emp1_ID: hrRole.emp_id, Leave_ID: leave.request_ID, status: 'pending' });
+      }
+      
+      return { success: true, message: 'Annual leave submitted successfully (mock)', data: leave };
     }
-    
-    if (employee.type_of_contract !== 'full_time') {
-      return { success: false, message: 'Only full-time employees can apply for annual leave' };
-    }
-    
-    if (!replacementEmp) {
-      return { success: false, message: 'Replacement employee is required' };
-    }
-    
-    const numDays = Math.floor((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    
-    if (employee.annual_balance < numDays) {
-      return { success: false, message: 'Insufficient annual leave balance' };
-    }
-    
-    const leave = {
-      request_ID: mockData.counters.leave++,
-      date_of_request: getCurrentDate(),
-      start_date: startDate,
-      end_date: endDate,
-      num_days: numDays,
-      final_approval_status: 'pending',
-      type: 'annual',
-      emp_ID: employeeId,
-      replacement_emp: replacementEmp
-    };
-    
-    mockData.leaves.push(leave);
-    
-    // Add approvals
-    const deanRole = mockData.roles.find(r => r.role_name === 'Dean' && mockData.employees.find(e => e.employee_ID === r.emp_id)?.dept_name === employee.dept_name);
-    if (deanRole) {
-      mockData.approvals.push({ Emp1_ID: deanRole.emp_id, Leave_ID: leave.request_ID, status: 'pending' });
-    }
-    
-    const hrRole = mockData.roles.find(r => r.role_name === `HR_Representative_${employee.dept_name}`);
-    if (hrRole) {
-      mockData.approvals.push({ Emp1_ID: hrRole.emp_id, Leave_ID: leave.request_ID, status: 'pending' });
-    }
-    
-    return { success: true, message: 'Annual leave submitted successfully', data: leave };
   },
 
   // Get leave status
@@ -1073,6 +1106,8 @@ export const api = {
     }
   },
 
+  
+
 
   
 
@@ -1086,75 +1121,127 @@ export const api = {
   
   // Get pending approvals for employee
   getPendingApprovals: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const approvals = mockData.approvals
-      .filter(a => a.Emp1_ID === employeeId && a.status === 'pending')
-      .map(a => {
-        const leave = mockData.leaves.find(l => l.request_ID === a.Leave_ID);
-        if (!leave) return null;
-        
-        const requestor = mockData.employees.find(e => e.employee_ID === leave.emp_ID);
-        
-        return {
-          ...a,
-          leave,
-          leaveType: leave.type.charAt(0).toUpperCase() + leave.type.slice(1) + ' Leave',
-          requestor: requestor ? `${requestor.first_name} ${requestor.last_name}` : 'Unknown'
-        };
-      })
-      .filter(a => a !== null);
-    
-    return { success: true, data: approvals };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/pending-approvals/${employeeId}`);
+      if (!response.ok) throw new Error('Failed to fetch pending approvals');
+      const result = await response.json();
+      return { success: true, data: result.data || [] };
+    } catch (error) {
+      console.error('getPendingApprovals error:', error);
+      // fallback to mock
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const approvals = mockData.approvals
+        .filter(a => a.Emp1_ID === employeeId && a.status === 'pending')
+        .map(a => {
+          const leave = mockData.leaves.find(l => l.request_ID === a.Leave_ID);
+          if (!leave) return null;
+          
+          const requestor = mockData.employees.find(e => e.employee_ID === leave.emp_ID);
+          
+          return {
+            ...a,
+            leave,
+            leaveType: leave.type.charAt(0).toUpperCase() + leave.type.slice(1) + ' Leave',
+            requestor: requestor ? `${requestor.first_name} ${requestor.last_name}` : 'Unknown'
+          };
+        })
+        .filter(a => a !== null);
+      
+      return { success: true, data: approvals };
+    }
   },
 
   // Approve leave
   approveLeave: async (employeeId: number, leaveId: number, status: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const approval = mockData.approvals.find(a => a.Emp1_ID === employeeId && a.Leave_ID === leaveId);
-    if (approval) {
-      approval.status = status;
-    }
-    
-    // Check if all approvals are done
-    const allApprovals = mockData.approvals.filter(a => a.Leave_ID === leaveId);
-    const allApproved = allApprovals.every(a => a.status === 'approved');
-    const anyRejected = allApprovals.some(a => a.status === 'rejected');
-    
-    const leave = mockData.leaves.find(l => l.request_ID === leaveId);
-    if (leave) {
-      if (anyRejected) {
-        leave.final_approval_status = 'rejected';
-      } else if (allApproved) {
-        leave.final_approval_status = 'approved';
-        
-        // Update balance
-        const employee = mockData.employees.find(e => e.employee_ID === leave.emp_ID);
-        if (employee) {
-          if (leave.type === 'annual') {
-            employee.annual_balance -= leave.num_days;
-          } else if (leave.type === 'accidental') {
-            employee.accidental_balance -= leave.num_days;
+    try {
+      const response = await fetch(`${API_BASE_URL}/approve-unpaid-leave`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request_ID: leaveId,
+          upperboard_ID: employeeId,
+          status: status
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to process leave');
+      
+      const result = await response.json();
+      return { success: true, message: result.message || `Leave ${status} successfully` };
+    } catch (error) {
+      console.error('approveLeave error:', error);
+      // fallback to mock
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const approval = mockData.approvals.find(a => a.Emp1_ID === employeeId && a.Leave_ID === leaveId);
+      if (approval) {
+        approval.status = status;
+      }
+      
+      // Check if all approvals are done
+      const allApprovals = mockData.approvals.filter(a => a.Leave_ID === leaveId);
+      const allApproved = allApprovals.every(a => a.status === 'approved');
+      const anyRejected = allApprovals.some(a => a.status === 'rejected');
+      
+      const leave = mockData.leaves.find(l => l.request_ID === leaveId);
+      if (leave) {
+        if (anyRejected) {
+          leave.final_approval_status = 'rejected';
+        } else if (allApproved) {
+          leave.final_approval_status = 'approved';
+          
+          // Update balance
+          const employee = mockData.employees.find(e => e.employee_ID === leave.emp_ID);
+          if (employee) {
+            if (leave.type === 'annual') {
+              employee.annual_balance -= leave.num_days;
+            } else if (leave.type === 'accidental') {
+              employee.accidental_balance -= leave.num_days;
+            }
           }
         }
       }
+      
+      return { success: true, message: `Leave ${status} successfully (mock)` };
     }
-    
-    return { success: true, message: `Leave ${status} successfully` };
   },
 
   // Submit evaluation
   submitEvaluation: async (data: any) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const performance = {
-      performance_ID: mockData.counters.performance++,
-      rating: data.rating,
-      comments: data.comments,
-      semester: data.semester,
-      emp_ID: data.employee_ID
-    };
-    
-    mockData.performance.push(performance);
-    return { success: true, message: 'Evaluation submitted successfully', data: performance };
+    try {
+      const response = await fetch(`${API_BASE_URL}/evaluate-employee`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_ID: data.employee_ID,
+          rating: data.rating,
+          comment: data.comments || data.comment || '',
+          semester: data.semester
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        const errorMsg = err.error || err.message || 'Failed to submit evaluation';
+        return { success: false, message: errorMsg };
+      }
+
+      const result = await response.json().catch(() => ({}));
+      return { success: true, message: result.message || 'Evaluation submitted successfully', data: result.data || null };
+    } catch (error: any) {
+      // fallback to mock if backend unavailable
+      console.error('submitEvaluation error:', error);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const performance = {
+        performance_ID: mockData.counters.performance++,
+        rating: data.rating,
+        comments: data.comments,
+        semester: data.semester,
+        emp_ID: data.employee_ID
+      };
+
+      mockData.performance.push(performance);
+      return { success: true, message: 'Evaluation submitted (mock)', data: performance };
+    }
   },
 
   // Get pending leaves for HR
