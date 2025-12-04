@@ -439,6 +439,7 @@ export const api = {
   },
 
   // Employee login
+
   employeeLogin: async (employeeId: number, password: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/employee/login`, {
@@ -911,24 +912,28 @@ export const api = {
 
   // Get leave status
   getLeaveStatus: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const currentMonth = getCurrentMonth();
-    const currentYear = new Date().getFullYear();
-    
-    const leaves = mockData.leaves
-      .filter(l => {
-        const leaveMonth = new Date(l.start_date).getMonth() + 1;
-        const leaveYear = new Date(l.start_date).getFullYear();
-        return l.emp_ID === employeeId && leaveMonth === currentMonth && leaveYear === currentYear && 
-               (l.type === 'annual' || l.type === 'accidental');
-      })
-      .map(l => ({
-        request_id: l.request_ID,
-        date_of_request: l.date_of_request,
-        status: l.final_approval_status
-      }));
-    
-    return { success: true, data: leaves };
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/employee/leave/status/${employeeId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        return { success: true, data: result.data };
+      } else {
+        return { success: false, message: result.message || 'Failed to fetch leave status', data: [] };
+      }
+    } catch (error) {
+      console.error('Get leave status error:', error);
+      return { 
+        success: false, 
+        message: `Failed to connect to server: ${error}`,
+        data: [] 
+      };
+    }
   },
 ///////////////////////////////////////////////////Rokaia/////////////////////////////////////////////////////
   

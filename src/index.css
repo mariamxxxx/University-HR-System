@@ -99,6 +99,7 @@
     --color-blue-500: oklch(.623 .214 259.815);
     --color-blue-600: oklch(.546 .245 262.881);
     --color-blue-700: oklch(.488 .243 264.376);
+    --color-blue-900: oklch(38.862% 0.18675 264.272);
     --color-indigo-50: oklch(.962 .018 272.314);
     --color-indigo-100: oklch(.93 .034 272.788);
     --color-indigo-200: oklch(.87 .065 274.039);
@@ -264,7 +265,6 @@
   }
 
   img, svg, video, canvas, audio, iframe, embed, object {
-    vertical-align: middle;
     display: block;
   }
 
@@ -866,6 +866,9 @@
 
   .bg-blue-100 {
     background-color: var(--color-blue-100);
+  }
+  .bg-blue-900 {
+    background-color: var(--color-blue-900);
   }
 
   .bg-gray-50 {

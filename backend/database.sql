@@ -1417,7 +1417,7 @@ AS
 Begin
 Declare @success BIT
 IF EXISTS (
-	SELECT 1 FROM Employee E WHERE employee_id=@employee_ID AND password=@password and dept_name <> 'HR')
+	SELECT 1 FROM Employee E WHERE employee_id=@employee_ID AND password=@password and (dept_name <> 'HR' OR dept_name IS NULL))
    SET @success =1
 ELSE
    SET @success =0;
@@ -1425,6 +1425,7 @@ Return @success
 END
 
 GO
+
 
 ------------2.5 b MyPerformance ---------
 CREATE or alter FUNCTION MyPerformance
@@ -2515,7 +2516,11 @@ values ('10-27-2025','10-30-2025','10-30-2025','pending')
 
 insert into leave (date_of_request,start_date,end_date
 ,final_approval_status)
-values ('09-13-2025','11-13-2025','03-13-2026','rejected')
+values ('12-13-2025','01-13-2026','03-13-2026','rejected')
+--mine
+insert into leave (date_of_request,start_date,end_date
+,final_approval_status)
+values ('12-13-2025','1-13-2026','03-13-2026','rejected')
 
 select * from Leave
 ----------------------------------------
@@ -2529,6 +2534,13 @@ insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
 values (4,11,12)
 insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
 values (5,5,4)
+--mine
+
+insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
+values (23,1,4)
+
+
+
 
 select * from Annual_Leave
 ---------------
@@ -2536,7 +2548,11 @@ insert into Accidental_Leave (request_ID,emp_ID)
 values (6,1)
 insert into Accidental_Leave (request_ID,emp_ID) 
 values (8,3)
+insert into Accidental_Leave (request_ID,emp_ID) 
+values (22,1)
 
+insert into Accidental_Leave (request_ID,emp_ID) 
+values (24,1)
 select * from Accidental_Leave
 ------------------
 insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
@@ -2632,6 +2648,12 @@ insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('09-8-2025',null,null,'absent',1)
 insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('10-15-2025','08:30','16:00','attended',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-1-2025',null,null,'absent',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-2-2025',null,null,'absent',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-3-2025','08:30','16:00','attended',1)
 
 select * from Attendance
 -----------------------------------------

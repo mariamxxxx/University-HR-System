@@ -79,7 +79,7 @@ app.post("/api/employee/login", async (req, res) => {
             res.json({
                 success: false,
                 message: "Invalid employee ID or password"
-            });
+           });
         }
     } catch (err) {
         console.error("Error during employee login:", err);
@@ -255,6 +255,65 @@ app.get("/api/employee/deductions/:employeeId/:month", async (req, res) => {
             success: false,
             message: err.message,
             error: "Failed to fetch deductions" 
+        });
+    }
+});
+
+// Submit annual leave
+app.post("/api/employee/leave/annual", async (req, res) => {
+    const { employee_id, replacement_emp, start_date, end_date } = req.body;
+    
+    console.log(`Submitting annual leave for employee ${employee_id}`);
+
+    try {
+        const pool = await poolPromise;
+        await pool
+            .request()
+            .input("employee_ID", sql.Int, parseInt(employee_id))
+            .input("replacement_emp", sql.Int, parseInt(replacement_emp))
+            .input("start_date", sql.Date, start_date)
+            .input("end_date", sql.Date, end_date)
+            .execute("Submit_annual");
+
+        console.log(`Annual leave submitted successfully`);
+        res.json({
+            success: true,
+            message: 'Annual leave submitted successfully'
+        });
+    } catch (err) {
+        console.error("Error submitting annual leave:", err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message,
+            error: "Failed to submit annual leave" 
+        });
+    }
+});
+
+// Get leave status
+app.get("/api/employee/leave/status/:employeeId", async (req, res) => {
+    const { employeeId } = req.params;
+    
+    console.log(`Fetching leave status for employee ${employeeId}`);
+
+    try {
+        const pool = await poolPromise;
+        const result = await pool
+            .request()
+            .input("employee_ID", sql.Int, parseInt(employeeId))
+            .query("SELECT * FROM dbo.status_leaves(@employee_ID)");
+
+        console.log(`Found ${result.recordset.length} leave status records`);
+        res.json({
+            success: true,
+            data: result.recordset
+        });
+    } catch (err) {
+        console.error("Error fetching leave status:", err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message,
+            error: "Failed to fetch leave status" 
         });
     }
 });
