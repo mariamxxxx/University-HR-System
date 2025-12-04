@@ -1417,7 +1417,7 @@ AS
 Begin
 Declare @success BIT
 IF EXISTS (
-	SELECT 1 FROM Employee E WHERE employee_id=@employee_ID AND password=@password and dept_name <> 'HR')
+	SELECT 1 FROM Employee E WHERE employee_id=@employee_ID AND password=@password and (dept_name <> 'HR' OR dept_name IS NULL))
    SET @success =1
 ELSE
    SET @success =0;
@@ -1425,6 +1425,7 @@ Return @success
 END
 
 GO
+
 
 ------------2.5 b MyPerformance ---------
 CREATE or alter FUNCTION MyPerformance
@@ -2647,6 +2648,12 @@ insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('09-8-2025',null,null,'absent',1)
 insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('10-15-2025','08:30','16:00','attended',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-1-2025',null,null,'absent',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-2-2025',null,null,'absent',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-3-2025','08:30','16:00','attended',1)
 
 select * from Attendance
 -----------------------------------------

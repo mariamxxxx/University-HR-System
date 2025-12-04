@@ -65,7 +65,7 @@ app.post("/api/employee/login", async (req, res) => {
             res.json({
                 success: false,
                 message: "Invalid employee ID or password"
-            });
+           });
         }
     } catch (err) {
         console.error("Error during employee login:", err);
