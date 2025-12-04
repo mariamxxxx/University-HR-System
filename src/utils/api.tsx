@@ -1033,25 +1033,43 @@ hrLogin: async (employee_ID: number, password: string) => {
 
   // Approve leave
  // APPROVE leave depending on type
-approveLeave: async (requestId: number, hrId: number, leaveType: string) => {
-  let endpoint = "";
+// approveLeave: async (requestId: number, hrId: number, leaveType: string) => {
+//   let endpoint = "";
 
-  switch (leaveType.toLowerCase()) {
-    case "annual":
-    case "accidental":
-      endpoint = "/approve-annual-accidental";
-      break;
-    case "unpaid":
-      endpoint = "/approve-unpaid";
-      break;
-    case "compensation":
-      endpoint = "/approve-compensation";
-      break;
-    default:
-      throw new Error("Invalid leave type");
-  }
+//   switch (leaveType.toLowerCase()) {
+//     case "annual":
+//     case "accidental":
+//       endpoint = "/approve-annual-accidental";
+//       break;
+//     case "unpaid":
+//       endpoint = "/approve-unpaid";
+//       break;
+//     case "compensation":
+//       endpoint = "/approve-compensation";
+//       break;
+//     default:
+//       throw new Error("Invalid leave type");
+//   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+//   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({
+//       request_ID: requestId,
+//       HR_ID: hrId,
+//       leave_type: leaveType
+//     })
+//   });
+
+//   if (!response.ok) {
+//     throw new Error(`HTTP error! status: ${response.status}`);
+//   }
+
+//   return response.json();
+// },
+
+approveAnnualLeave: async (requestId: number, hrId: number, leaveType: string) => {
+  const response = await fetch(`${API_BASE_URL}/approve-annual-accidental`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -1060,13 +1078,45 @@ approveLeave: async (requestId: number, hrId: number, leaveType: string) => {
       leave_type: leaveType
     })
   });
-
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
-
   return response.json();
 },
+
+approveUnpaidLeave: async (requestId: number, hrId: number, leaveType: string) => {
+  const response = await fetch(`${API_BASE_URL}/approve-unpaid`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      request_ID: requestId,
+      HR_ID: hrId,
+      leave_type: leaveType
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+},
+
+approveCompensationLeave: async (requestId: number, hrId: number, leaveType: string) => {
+  const response = await fetch(`${API_BASE_URL}/approve-compensation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      request_ID: requestId,
+      HR_ID: hrId,
+      leave_type: leaveType
+    })
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+},
+
+
 
 processLeave: async (requestId: number, hrId: number, leaveType: string) => {
   let endpoint = "";
@@ -1126,14 +1176,14 @@ processLeave: async (requestId: number, hrId: number, leaveType: string) => {
 
   //hr approve annual/accidental leave
   hrApproveLeave: async (requestId: number, hrId: number, leaveType: string) => {
-    const response =await fetch(`${API_BASE_URL}/approve-annual-accidental`, {
-      method: 'POST', 
+    const response = await fetch(`${API_BASE_URL}/approve-annual-accidental`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        request_id: requestId,
-        hr_id: hrId,
+        request_ID: requestId,
+        HR_ID: hrId,
         leave_type: leaveType,
       }),
     });

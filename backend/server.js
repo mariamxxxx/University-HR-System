@@ -101,68 +101,12 @@ app.post("/hr-login", async (req, res) => {
 });
 
 
-
 // Get pending leaves for HR approval - UPDATED
-app.get("/pending-leaves", async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        
-        // Get leaves pending HR approval
-        const result = await pool
-            .request()
-            .query(`
-                SELECT 
-                    l.request_ID,
-                    l.date_of_request,
-                    l.start_date,
-                    l.end_date,
-                    l.num_days,
-                    l.final_approval_status,
-                    e.first_name + ' ' + e.last_name as employee_name,
-                    e.employee_id,
-                    LTRIM(RTRIM(
-                        CASE 
-                            WHEN al.request_ID IS NOT NULL THEN 'Annual'
-                            WHEN acl.request_ID IS NOT NULL THEN 'Accidental' 
-                            WHEN ml.request_ID IS NOT NULL THEN 'Medical'
-                            WHEN ul.request_ID IS NOT NULL THEN 'Unpaid'
-                            WHEN cl.request_ID IS NOT NULL THEN 'Compensation'
-                            ELSE 'Unknown'
-                        END
-                    )) as leave_type
-                FROM Leave l
-                LEFT JOIN Annual_Leave al ON l.request_ID = al.request_ID
-                LEFT JOIN Accidental_Leave acl ON l.request_ID = acl.request_ID
-                LEFT JOIN Medical_Leave ml ON l.request_ID = ml.request_ID
-                LEFT JOIN Unpaid_Leave ul ON l.request_ID = ul.request_ID
-                LEFT JOIN Compensation_Leave cl ON l.request_ID = cl.request_ID
-                INNER JOIN Employee e ON 
-                    (al.emp_ID = e.employee_id OR 
-                     acl.emp_ID = e.employee_id OR 
-                     ml.Emp_ID = e.employee_id OR 
-                     ul.Emp_ID = e.employee_id OR 
-                     cl.emp_ID = e.employee_id)
-                WHERE l.final_approval_status = 'Pending'
-                ORDER BY l.date_of_request DESC
-            `);
-            
-        console.log("Pending leaves fetched:", result.recordset.length, "records");
-        if (result.recordset.length > 0) {
-            console.log("First leave type:", result.recordset[0].leave_type);
-        }
-            
-        res.json({ success: true, data: result.recordset });
-    } catch (err) {
-        console.error("Error fetching pending leaves:", err);
-        res.status(500).json({ success: false, message: "Server error", error: err.message });
-    }
-});
 
 // 2. HR Approve/Reject Annual or Accidental Leave
 app.post("/approve-annual-accidental", async (req, res) => {
     const { request_ID, HR_ID, leave_type } = req.body;
 
-    
     if (!request_ID || !HR_ID) {
         return res.status(400).json({ success: false, message: "Missing parameters" });
     }
