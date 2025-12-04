@@ -48,7 +48,7 @@ export const updateAttendanceFromBackend = async (employee_ID: number, check_in_
     body: JSON.stringify({ employee_ID, check_in_time, check_out_time }),
   });
   if (!response.ok) {
-    throw new Error('Failed to update attendance in backend');
+    throw new Error('Failed to update attendance.');
   }
   return response.json();
 };
@@ -60,10 +60,10 @@ export const addHolidayToBackend = async (name: string, from_date: string, to_da
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ name, from_date, to_date }),
+    body: JSON.stringify({ holiday_name: name, name, from_date, to_date }),
   });
   if (!response.ok) {
-    throw new Error('Failed to add holiday to backend');
+    throw new Error('Failed to add holiday.');
   }
   return response.json();
 };

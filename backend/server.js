@@ -83,19 +83,56 @@ app.post("/remove-deductions", async (req, res) => {
 });
 
 
-// 6 Update the attendance record for the current day for a certain employee along with the status 
+// 6 Update the attendance record for the current day for a certain employee along with the status
 app.post("/update-attendance", async (req, res) => {
-    const { Employee_id, check_in_time, check_out_time } = req.body;
-    if (!Employee_id || !check_in_time || !check_out_time) {
-        return res.status(400).json({ error: "Employee_id, check_in_time, and check_out_time are required" });
+    const {
+        Employee_id,
+        employee_ID,
+        employeeId,
+        check_in_time,
+        checkInTime,
+        check_in,
+        check_out_time,
+        checkOutTime,
+        check_out
+    } = req.body;
+
+    const resolvedEmployeeId = Employee_id ?? employee_ID ?? employeeId;
+    if (!resolvedEmployeeId) {
+        return res.status(400).json({ error: "employee_ID is required" });
     }
+
+    const parseTime = (value) => {
+        if (value === undefined || value === null) return null;
+        const asString = typeof value === "string" ? value.trim() : "";
+        if (!asString) return null;
+
+        const directMatch = asString.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (directMatch) {
+            const hours = parseInt(directMatch[1], 10);
+            const minutes = parseInt(directMatch[2], 10);
+            const seconds = parseInt(directMatch[3] ?? "0", 10);
+            return new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds));
+        }
+
+        const fallbackDate = new Date(asString);
+        if (!isNaN(fallbackDate.getTime())) {
+            return new Date(Date.UTC(1970, 0, 1, fallbackDate.getHours(), fallbackDate.getMinutes(), fallbackDate.getSeconds()));
+        }
+
+        return null;
+    };
+
+    const resolvedCheckIn = parseTime(check_in_time ?? checkInTime ?? check_in ?? null);
+    const resolvedCheckOut = parseTime(check_out_time ?? checkOutTime ?? check_out ?? null);
+
     try {
         const pool = await poolPromise;
         const result = await pool
             .request()
-            .input("employee_id", sql.Int, Employee_id)
-            .input("check_in_time", sql.DateTime, check_in_time)
-            .input("check_out_time", sql.DateTime, check_out_time)
+            .input("employee_id", sql.Int, resolvedEmployeeId)
+            .input("check_in_time", sql.Time, resolvedCheckIn)
+            .input("check_out_time", sql.Time, resolvedCheckOut)
             .execute("Update_Attendance");
         res.json({
             message: "Attendance updated successfully",
@@ -111,16 +148,27 @@ app.post("/update-attendance", async (req, res) => {
 
 // 7 Add a new official holiday 
 app.post("/add-holiday", async (req, res) => {
-    const { holiday_name, from_date, to_date } = req.body;
-    if (!holiday_name || !from_date || !to_date) {
-        return res.status(400).json({ error: "holiday_name, from_date, and to_date are required" });
+    const { holiday_name, name, from_date, to_date } = req.body;
+    const resolvedName = holiday_name ?? name;
+    if (!resolvedName || !from_date || !to_date) {
+        return res.status(400).json({ error: "holiday_name (or name), from_date, and to_date are required" });
     }
     try {
         const pool = await poolPromise;
-        await pool.request().execute("Create_Holiday");
+        try {
+            await pool.request().execute("Create_Holiday");
+        } catch (innerErr) {
+            const alreadyExists =
+                typeof innerErr.message === "string" &&
+                innerErr.message.includes("There is already an object named 'Holiday'");
+            if (!alreadyExists) {
+                throw innerErr;
+            }
+        }
+
         const result = await pool
             .request()
-            .input("holiday_name", sql.NVarChar, holiday_name)
+            .input("holiday_name", sql.NVarChar, resolvedName)
             .input("from_date", sql.Date, from_date)
             .input("to_date", sql.Date, to_date)
             .execute("Add_Holiday");
@@ -128,7 +176,7 @@ app.post("/add-holiday", async (req, res) => {
             message: "Holiday added successfully",
             result: result.recordset ?? []
         });
-    console.log(result);
+        console.log(result);
     } catch (err) {
         console.error("Error adding holiday:", err);
         res.status(500).json({ error: "Failed to add holiday" });
