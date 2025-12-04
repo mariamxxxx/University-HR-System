@@ -53,6 +53,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
 
   const checkUserRole = async () => {
     try {
+      // Prefer roles returned at login (faster, avoids extra network call)
+      if (user && Array.isArray(user.roles) && user.roles.length > 0) {
+        const roles = user.roles as string[];
+        const approver = roles.some(r => ['Dean', 'Vice Dean', 'President'].includes(r));
+        setIsApprover(approver);
+        setUserRole(roles[0] || null);
+        return;
+      }
+
       const result = await api.isEmployeeApprover(user.employee_ID);
       if (result.success) {
         setIsApprover(result.data.isApprover);

@@ -48,10 +48,19 @@ app.post("/api/employee/login", async (req, res) => {
 
             if (employeeResult.recordset.length > 0) {
                 console.log(`Login successful for: ${employeeResult.recordset[0].first_name} ${employeeResult.recordset[0].last_name}`);
+                // Fetch roles for this employee and include them in the response
+                const rolesResult = await pool
+                    .request()
+                    .input('employee_ID', sql.Int, employee_id)
+                    .query('SELECT role_name FROM Employee_Role WHERE emp_ID = @employee_ID');
+
+                const roles = rolesResult.recordset.map(r => r.role_name);
+                const responseData = { ...employeeResult.recordset[0], roles };
+
                 res.json({
                     success: true,
                     message: "Login successful",
-                    data: employeeResult.recordset[0]
+                    data: responseData
                 });
             } else {
                 console.log(`Employee ${employee_id} not found in database`);
@@ -124,6 +133,7 @@ app.get("/api/debug/employees", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch employees" });
     }
 });
+
 
 // Get employee performance by semester
 app.get("/api/employee/performance/:employeeId/:semester", async (req, res) => {
@@ -255,6 +265,234 @@ app.get("/api/employee/payroll/:employeeId", async (req, res) => {
         });
     }
 });
+
+
+////////////////////////////////////////ROKAIA////////////////////////////////////////
+
+// Get roles for an employee and whether they are an approver (Dean/Vice Dean/President)
+app.get('/api/employee/roles/:employeeId', async (req, res) => {
+    const { employeeId } = req.params;
+    try {
+        const pool = await poolPromise;
+        const result = await pool
+            .request()
+            .input('employee_ID', sql.Int, parseInt(employeeId))
+            .query('SELECT role_name FROM Employee_Role WHERE emp_ID = @employee_ID');
+
+        const roles = result.recordset.map(r => r.role_name);
+        const primaryRole = roles.length > 0 ? roles[0] : null;
+        const isApprover = roles.some(r => ['Dean', 'Vice Dean', 'President'].includes(r));
+
+        res.json({ success: true, data: { roles, isApprover, role: primaryRole } });
+    } catch (err) {
+        console.error('Error fetching employee roles:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+
+// Submit medical leave
+app.post("/submit-medical-leave", async (req, res) => { // /submit...is the api url
+    const { //inputs from frontend or extracting from the frontend
+        employee_ID, 
+        start_date, 
+        end_date, 
+        type,
+        insurance_status, 
+        disability_details, 
+        document_description, 
+        file_name 
+    } = req.body;
+
+    try {
+        const pool = await poolPromise; // waiting for connection to the DB
+        await pool
+            .request() //creates a new sql request obj 
+            .input("employee_ID", sql.Int, employee_ID) //(name of parameter in the db proc, sql datatype, value from the front end)
+            .input("start_date", sql.Date, start_date)
+            .input("end_date", sql.Date, end_date)
+            .input("medical_type", sql.VarChar(50), type)
+            .input("insurance_status", sql.Bit, insurance_status === 'yes' ? 1 : 0)
+            .input("disability_details", sql.VarChar(50), disability_details || null) // if no details, send null. disability_details is optional (nullable)
+            .input("document_description", sql.VarChar(50), document_description)
+            .input("file_name", sql.VarChar(50), file_name)
+            .execute("Submit_medical"); //this calls the stored proc in the db.sql file 
+
+        res.json({ success: true, message: "Medical leave submitted successfully" }); // send success response to frontend
+    } catch (err) { //ERROR HANDLING
+        console.error("Error submitting medical leave:", err);
+        res.status(500).json({ error: "Failed to submit medical leave", details: err.message });
+    }
+});
+
+//submit accidental leave
+app.post("/submit-accidental-leave", async (req, res) => {
+    const{
+        employee_ID,
+        start_date,
+        end_date, 
+    }= req.body;
+    try{
+        const pool = await poolPromise;
+        
+        // Calculate number of days
+        const numDays = Math.floor((new Date(end_date) - new Date(start_date)) / (1000 * 60 * 60 * 24)) + 1;
+        
+        // Check if employee has sufficient accidental leave balance
+        const balanceResult = await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .query("SELECT accidental_balance FROM Employee WHERE employee_id = @employee_ID");
+        
+        if (balanceResult.recordset.length === 0) {
+            return res.status(404).json({ error: "Employee not found" });
+        }
+        
+        const accidentalBalance = balanceResult.recordset[0].accidental_balance;
+        
+        if (accidentalBalance < numDays) {
+            return res.status(400).json({ 
+                error: `Insufficient accidental leave balance. You have ${accidentalBalance} day(s) remaining but requested ${numDays} day(s).` 
+            });
+        }
+        
+        const result = await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .input("start_date", sql.Date, start_date)
+            .input("end_date", sql.Date, end_date)
+            .execute("Submit_accidental");
+
+        res.json({ success: true, message: "Accidental leave submitted successfully" });
+    } catch (err) {
+        console.error("Error submitting accidental leave:", err);
+        res.status(500).json({ error: "Failed to submit accidental leave", details: err.message });
+    }
+});
+//submit unpaid leave
+app.post("/submit-unpaid-leave", async (req, res) => {
+    const{
+        employee_ID,
+        start_date,
+        end_date,
+        document_description,
+        file_name
+    } = req.body;
+    
+    // Validate 30-day limit
+    const numDays = Math.floor((new Date(end_date) - new Date(start_date)) / (1000 * 60 * 60 * 24)) + 1;
+    if (numDays > 30) {
+        return res.status(400).json({ error: "Unpaid leave cannot exceed 30 days" });
+    }
+    
+    try {
+        const pool = await poolPromise;
+        await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .input("start_date", sql.Date, start_date)
+            .input("end_date", sql.Date, end_date)
+            .input("document_description", sql.VarChar(50), document_description)
+            .input("file_name", sql.VarChar(50), file_name)
+            .execute("Submit_unpaid");
+
+        res.json({ success: true, message: "Unpaid leave submitted successfully" });
+    } catch (err) {
+        console.error("Error submitting unpaid leave:", err);
+        res.status(500).json({ error: "Failed to submit unpaid leave", details: err.message });
+    }
+});
+//compensation leave
+app.post("/submit-compensation-leave", async (req, res) => {
+    const{
+        employee_ID,
+        compensation_date,
+        reason,
+        date_of_original_workday,
+        replacement_emp
+    } = req.body;
+    try {
+        const pool = await poolPromise;
+        await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .input("compensation_date", sql.Date, compensation_date)
+            .input("reason", sql.VarChar(50), reason)
+            .input("date_of_original_workday", sql.Date, date_of_original_workday)
+            .input("rep_emp_id", sql.Int, replacement_emp)
+            .execute("Submit_compensation");
+
+        res.json({ success: true, message: "Compensation leave submitted successfully" });
+    } catch (err) {
+        console.error("Error submitting compensation leave:", err);
+        res.status(500).json({ error: "Failed to submit compensation leave", details: err.message });
+    }
+});
+
+// Approve/Reject unpaid leave (Dean/Vice-Dean/President)
+app.post("/approve-unpaid-leave", async (req, res) => {
+    const { request_ID, upperboard_ID } = req.body;
+    
+    try {
+        const pool = await poolPromise;
+        await pool
+            .request()
+            .input("request_ID", sql.Int, request_ID)
+            .input("upperboard_ID", sql.Int, upperboard_ID)
+            .execute("Upperboard_approve_unpaids");
+
+        res.json({ success: true, message: "Unpaid leave processed successfully" });
+    } catch (err) {
+        console.error("Error approving unpaid leave:", err);
+        res.status(500).json({ error: "Failed to process unpaid leave", details: err.message });
+    }
+});
+
+// Approve/Reject annual leave (Dean/Vice-Dean/President)
+app.post("/approve-annual-leave", async (req, res) => {
+    const { request_ID, upperboard_ID, replacement_ID } = req.body;
+    
+    try {
+        const pool = await poolPromise;
+        await pool
+            .request()
+            .input("request_ID", sql.Int, request_ID)
+            .input("Upperboard_ID", sql.Int, upperboard_ID)
+            .input("replacement_ID", sql.Int, replacement_ID)
+            .execute("Upperboard_approve_annual");
+
+        res.json({ success: true, message: "Annual leave processed successfully" });
+    } catch (err) {
+        console.error("Error approving annual leave:", err);
+        res.status(500).json({ error: "Failed to process annual leave", details: err.message });
+    }
+});
+
+// Dean/HR evaluate employee
+app.post("/evaluate-employee", async (req, res) => {
+    const { employee_ID, rating, comment, semester } = req.body;
+    
+    try {
+        const pool = await poolPromise;
+        await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .input("rating", sql.Int, rating)
+            .input("comment", sql.VarChar(50), comment)
+            .input("semester", sql.Char(3), semester)
+            .execute("Dean_andHR_Evaluation");
+
+        res.json({ success: true, message: "Employee evaluation submitted successfully" });
+    } catch (err) {
+        console.error("Error submitting evaluation:", err);
+        res.status(500).json({ error: "Failed to submit evaluation", details: err.message });
+    }
+});
+
+
+
+//////////////////////////////////////////end ROKAIA////////////////////////////////////////
+
 
 
 // Start server only after DB is ready
