@@ -1,6 +1,6 @@
-create DATABASE University_HR_ManagementSystem;
+create DATABASE University_HR_ManagementSystem2;
 GO
-USE University_HR_ManagementSystem;
+USE University_HR_ManagementSystem2;
 GO
 
 CREATE FUNCTION HRSalary_calculation
@@ -414,8 +414,11 @@ WHERE last_working_date< CURRENT_TIMESTAMP AND employment_status= 'resigned');
 
 GO
 
--- 2.3 c) Update the employee’s employment_status daily based on whether the employee is on leave or active.
 
+
+-- 2.3 c) Update the employee’s employment_status daily based on whether the employee is on leave or active. 15
+
+GO
 CREATE or alter PROC Update_Employment_Status @Employee_ID int
 AS 
 declare @onleave bit =dbo.Is_On_Leave ( @Employee_ID, 
@@ -448,6 +451,7 @@ to_date date
 GO
 
 
+
 CREATE OR ALTER PROCEDURE Add_Holiday
     @holiday_name VARCHAR(50),
     @from_date DATE,
@@ -476,6 +480,8 @@ END;
 
 GO
 
+select * from holiday;
+
 
 
 CREATE OR ALTER PROCEDURE Initiate_Attendance
@@ -494,6 +500,10 @@ BEGIN
 	);
 END;
 GO
+
+
+select * from attendance 
+
 
 
 --------------2.3 g ----------
@@ -519,7 +529,6 @@ BEGIN
 		  AND [date] = @today
 	)
 	BEGIN
-		PRINT 'No attendance record found for this employee today.'
 	END
 	ELSE 
 	BEGIN
@@ -534,6 +543,9 @@ END;
 GO
 ----------- 2.3 h -------------
 
+select * from attendance;
+
+go
 CREATE OR ALTER PROCEDURE Remove_Holiday
 AS
 BEGIN
@@ -2278,9 +2290,28 @@ null,null,'09-01-2006',null,null),
 'Korba',
 'F','Saturday',2,'1234567811123120','notice_period','full_time',
 'Taha Hussein','01234277761',
-0,4,'01-01-2024',NULL,'BI') 
+0,4,'01-01-2024',NULL,'BI');
 
+insert into Employee (first_name,last_name,email,
+password,address,gender,official_day_off,years_of_experience,
+national_ID,employment_status, type_of_contract,emergency_contact_name,
+emergency_contact_phone,annual_balance,accidental_balance,hire_date,
+last_working_date,dept_name)
+values  ('mariam','mohamed','mariam.mohamed@guc.edu.eg','123','new cairo',
+'f','Saturday',0,'1234567890123456','active','part_time',
+'Sarah','01234567892',
+30,6,'09-01-2025',null,'BI');
 
+-- insert resigned employee with last working day before now
+insert into Employee (first_name,last_name,email,
+password,address,gender,official_day_off,years_of_experience,
+national_ID,employment_status, type_of_contract,emergency_contact_name,
+emergency_contact_phone,annual_balance,accidental_balance,hire_date,
+last_working_date,dept_name)
+values  ('Youssef','Hassan','m@gmail.com','123','new cairo',
+'M','Saturday',0,'1234567890123499','resigned','full_time',
+'Sara','01234567899',
+30,6,'09-01-2020','05-01-2024','MET');
 
 
 SELECT * FROM Employee
@@ -2517,15 +2548,6 @@ insert into leave (date_of_request,start_date,end_date
 ,final_approval_status)
 values ('09-13-2025','11-13-2025','03-13-2026','rejected')
 
-insert into leave (date_of_request,start_date,end_date
-,final_approval_status)
-values ('09-20-2025','11-27-2025','03-13-2026','rejected')
-
-insert into leave (date_of_request,start_date,end_date
-,final_approval_status)
-values ('09-20-2025','11-27-2025','03-13-2026','rejected')
-
-
 select * from Leave
 ----------------------------------------
 insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
@@ -2558,13 +2580,7 @@ values (12,1,null,'maternity',3)
 insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
 values (21,1,null,'sick',8)
 
-insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
-values (25,1,null,'maternity',1)
-
-insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
-values (26,1,'blind','maternity',1)
-
-select * from Medical_Leave 
+select * from Medical_Leave
 -----------------
 insert into Unpaid_Leave (request_id,Emp_ID)
 values (13,2)
@@ -2796,5 +2812,3 @@ values (5,19,'pending')
 insert into Employee_Approve_Leave (Emp1_ID,leave_ID,status)
 values (5,20,'pending')
 ------------------------------------------------------
-
-

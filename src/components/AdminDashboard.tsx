@@ -3,7 +3,11 @@ import { toast } from 'sonner';
 import { api } from '../utils/api.tsx';
 import {fetchEmployeesFromBackend, 
         fetchEmployeesPerDeptFromBackend, 
-        fetchRejectedMedicalsFromBackend
+        fetchRejectedMedicalsFromBackend,
+        removeResignedDeductionsFromBackend,
+        updateAttendanceFromBackend,
+        addHolidayToBackend,
+        initiateAttendanceInBackend
  } from './admin/AdminPart1';
 
 
@@ -179,7 +183,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     onClick={async () => {
                       setLoading(true);
                       try {
-                        const result = await api.initiateAttendance();
+                        const result = await initiateAttendanceInBackend();
                         toast.success(result.message);
                       } catch (error: any) {
                         toast.error(error.message);
@@ -196,10 +200,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       if (!confirm('Remove all deductions for resigned employees?')) return;
                       setLoading(true);
                       try {
-                        const result = await api.removeResignedDeductions();
+                        const result = await removeResignedDeductionsFromBackend();
                         toast.success(result.message);
                       } catch (error: any) {
-                        toast.error(error.message);
+                        toast.error(error.message || 'Failed to remove deductions');
                       } finally {
                         setLoading(false);
                       }
@@ -337,14 +341,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>✏️</span>
                 Update Attendance
               </h3>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                  const result = await api.updateAttendance(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
+                  const result = await updateAttendanceFromBackend(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
                   toast.success(result.message);
                   setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
                 } catch (error: any) {
@@ -383,14 +386,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>📆</span>
                 Add Holiday
               </h3>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                  const result = await api.addHoliday(holidayData.name, holidayData.from_date, holidayData.to_date);
+                  const result = await addHolidayToBackend(holidayData.name, holidayData.from_date, holidayData.to_date);
                   toast.success(result.message);
                   setHolidayData({ name: '', from_date: '', to_date: '' });
                 } catch (error: any) {

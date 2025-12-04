@@ -18,7 +18,7 @@ export const fetchEmployeesPerDeptFromBackend = async () => {
     throw new Error('Failed to fetch employees per department from backend');
   }
   return response.json();
-}
+};
 
 export const fetchRejectedMedicalsFromBackend = async () => {
   const response = await fetch(`${BACKEND_BASE_URL}/view-rejected-medicals`);
@@ -26,7 +26,57 @@ export const fetchRejectedMedicalsFromBackend = async () => {
     throw new Error('Failed to fetch rejected medicals from backend');
   }
   return response.json();
-}
+};
+
+export const removeResignedDeductionsFromBackend = async () => {
+  const response = await fetch(`${BACKEND_BASE_URL}/remove-deductions`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch rejected medicals from backend');
+  }
+  return response.json();
+};
+
+
+export const updateAttendanceFromBackend = async (employee_ID: number, check_in_time: string, check_out_time: string) => {
+  const response = await fetch(`${BACKEND_BASE_URL}/update-attendance`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ employee_ID, check_in_time, check_out_time }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update attendance in backend');
+  }
+  return response.json();
+};
+
+
+export const addHolidayToBackend = async (name: string, from_date: string, to_date: string) => {
+  const response = await fetch(`${BACKEND_BASE_URL}/add-holiday`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, from_date, to_date }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to add holiday to backend');
+  }
+  return response.json();
+};
+
+export const initiateAttendanceInBackend = async () => {
+  const response = await fetch(`${BACKEND_BASE_URL}/initiate-attendance`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to initiate attendance in backend');
+  }
+  return response.json();
+};
 
 export function AdminPart1() {
   const [activeSection, setActiveSection] = useState<string>('employees');
@@ -94,13 +144,14 @@ export function AdminPart1() {
     }
 
     setLoading(true);
-    try {
-      const result = await api.removeResignedDeductions();
-      toast.success(result.message);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to remove deductions');
-    } finally {
-      setLoading(false);
+      try {
+        const result = await removeResignedDeductionsFromBackend();
+        setRejectedMedicals(result);
+        toast.success('Removed successfully');
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to remove deductions');
+      } finally {
+        setLoading(false);
     }
   };
 
@@ -108,7 +159,7 @@ export function AdminPart1() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await api.updateAttendance(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
+      const result = await updateAttendanceFromBackend(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
       toast.success(result.message);
       setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
     } catch (error: any) {
@@ -122,7 +173,7 @@ export function AdminPart1() {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await api.addHoliday(holidayData.name, holidayData.from_date, holidayData.to_date);
+      const result = await addHolidayToBackend(holidayData.name, holidayData.from_date, holidayData.to_date);
       toast.success(result.message);
       setHolidayData({ name: '', from_date: '', to_date: '' });
     } catch (error: any) {
@@ -139,7 +190,7 @@ export function AdminPart1() {
 
     setLoading(true);
     try {
-      const result = await api.initiateAttendance();
+      const result = await initiateAttendanceInBackend();
       toast.success(result.message);
     } catch (error: any) {
       toast.error(error.message || 'Failed to initiate attendance');
