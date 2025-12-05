@@ -126,6 +126,7 @@ export function AdminPart1() {
     }
   };
 
+  //detch rejected medicals
   const fetchRejectedMedicals = async () => {
   setLoading(true);
     try {
@@ -139,6 +140,74 @@ export function AdminPart1() {
     }
   };
 
+  
+  //remove resigned deductions
+  const removeResignedDeductions = async () => {
+    if (!confirm('Are you sure you want to remove all deductions for resigned employees?')) {
+      return;
+    }
+
+    setLoading(true);
+      try {
+        const result = await removeResignedDeductionsFromBackend();
+        setRejectedMedicals(result);
+        toast.success('Removed successfully');
+      } catch (error: any) {
+        toast.error(error.message || 'Failed to remove deductions');
+      } finally {
+        setLoading(false);
+    }
+  };
+
+  //update attendance
+  const updateAttendance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const result = await updateAttendanceFromBackend(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
+      toast.success(result.message);
+      setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update attendance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //add holiday
+  const addHoliday = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const result = await addHolidayToBackend(holidayData.name, holidayData.from_date, holidayData.to_date);
+      toast.success(result.message);
+      setHolidayData({ name: '', from_date: '', to_date: '' });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add holiday');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  //initialize attendance
+  const initiateAttendance = async () => {
+    if (!confirm('This will initialize attendance records for all employees for today. Continue?')) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await initiateAttendanceInBackend();
+      toast.success(result.message);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to initiate attendance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
   const fetchPendingLeaves = async () => {
     setLoading(true);
     try {
@@ -179,66 +248,7 @@ export function AdminPart1() {
     }
   };
 
-  const removeResignedDeductions = async () => {
-    if (!confirm('Are you sure you want to remove all deductions for resigned employees?')) {
-      return;
-    }
 
-    setLoading(true);
-      try {
-        const result = await removeResignedDeductionsFromBackend();
-        setRejectedMedicals(result);
-        toast.success('Removed successfully');
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to remove deductions');
-      } finally {
-        setLoading(false);
-    }
-  };
-
-  const updateAttendance = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const result = await updateAttendanceFromBackend(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
-      toast.success(result.message);
-      setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update attendance');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addHoliday = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const result = await addHolidayToBackend(holidayData.name, holidayData.from_date, holidayData.to_date);
-      toast.success(result.message);
-      setHolidayData({ name: '', from_date: '', to_date: '' });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add holiday');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const initiateAttendance = async () => {
-    if (!confirm('This will initialize attendance records for all employees for today. Continue?')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const result = await initiateAttendanceInBackend();
-      toast.success(result.message);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to initiate attendance');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (activeSection === 'employees') {

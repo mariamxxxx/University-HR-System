@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '../utils/api.tsx';
-import { fetchEmployeesFromBackend } from './admin/AdminPart1';
 import { formatTime } from '../utils/time';
 import {fetchEmployeesFromBackend, 
         fetchEmployeesPerDeptFromBackend, 
