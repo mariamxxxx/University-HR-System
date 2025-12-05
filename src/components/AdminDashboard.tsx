@@ -357,29 +357,47 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   setLoading(false);
                 }
               }} className="grid md:grid-cols-4 gap-4">
-                <input
-                  type="number"
-                  placeholder="Employee ID"
-                  value={attendanceData.employee_ID}
-                  onChange={(e) => setAttendanceData({ ...attendanceData, employee_ID: e.target.value })}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-                <input
-                  type="time"
-                  placeholder="Check-in"
-                  value={attendanceData.check_in_time}
-                  onChange={(e) => setAttendanceData({ ...attendanceData, check_in_time: e.target.value })}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                />
-                <input
-                  type="time"
-                  placeholder="Check-out"
-                  value={attendanceData.check_out_time}
-                  onChange={(e) => setAttendanceData({ ...attendanceData, check_out_time: e.target.value })}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                />
-                <button type="submit" disabled={loading} className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all disabled:opacity-50">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm text-gray-600 font-medium" htmlFor="attendance-employee-id">
+                    Employee ID
+                  </label>
+                  <input
+                    id="attendance-employee-id"
+                    type="number"
+                    placeholder="Employee ID"
+                    value={attendanceData.employee_ID}
+                    onChange={(e) => setAttendanceData({ ...attendanceData, employee_ID: e.target.value })}
+                    className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm text-gray-600 font-medium" htmlFor="check-in-time">
+                    From Time (Check-in)
+                  </label>
+                  <input
+                    id="check-in-time"
+                    type="time"
+                    placeholder="Check-in"
+                    value={attendanceData.check_in_time}
+                    onChange={(e) => setAttendanceData({ ...attendanceData, check_in_time: e.target.value })}
+                    className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm text-gray-600 font-medium" htmlFor="check-out-time">
+                    To Time (Check-out)
+                  </label>
+                  <input
+                    id="check-out-time"
+                    type="time"
+                    placeholder="Check-out"
+                    value={attendanceData.check_out_time}
+                    onChange={(e) => setAttendanceData({ ...attendanceData, check_out_time: e.target.value })}
+                    className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <button type="submit" disabled={loading} className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-5 py-2 rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all disabled:opacity-50">
                   Update
                 </button>
               </form>
@@ -402,29 +420,47 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   setLoading(false);
                 }
               }} className="grid md:grid-cols-4 gap-4">
-                <input
-                  type="text"
-                  placeholder="Holiday Name"
-                  value={holidayData.name}
-                  onChange={(e) => setHolidayData({ ...holidayData, name: e.target.value })}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-                <input
-                  type="date"
-                  value={holidayData.from_date}
-                  onChange={(e) => setHolidayData({ ...holidayData, from_date: e.target.value })}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-                <input
-                  type="date"
-                  value={holidayData.to_date}
-                  onChange={(e) => setHolidayData({ ...holidayData, to_date: e.target.value })}
-                  className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-                <button type="submit" disabled={loading} className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all disabled:opacity-50">
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm text-gray-600 font-medium" htmlFor="holiday-name">
+                    Holiday Name
+                  </label>
+                  <input
+                    id="holiday-name"
+                    type="text"
+                    placeholder="Holiday Name"
+                    value={holidayData.name}
+                    onChange={(e) => setHolidayData({ ...holidayData, name: e.target.value })}
+                    className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm text-gray-600 font-medium" htmlFor="holiday-from-date">
+                    From Date
+                  </label>
+                  <input
+                    id="holiday-from-date"
+                    type="date"
+                    value={holidayData.from_date}
+                    onChange={(e) => setHolidayData({ ...holidayData, from_date: e.target.value })}
+                    className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-sm text-gray-600 font-medium" htmlFor="holiday-to-date">
+                    To Date
+                  </label>
+                  <input
+                    id="holiday-to-date"
+                    type="date"
+                    value={holidayData.to_date}
+                    onChange={(e) => setHolidayData({ ...holidayData, to_date: e.target.value })}
+                    className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+                <button type="submit" disabled={loading} className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-5 py-2 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all disabled:opacity-50">
                   Add Holiday
                 </button>
               </form>
