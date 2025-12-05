@@ -109,10 +109,7 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
     ],
     employee: [
       { id: '1001', password: 'password123', name: 'John Smith (Dean)' },
-      { id: '1002', password: 'password123', name: 'Sarah Johnson (Professor)' },
-      { id: '1003', password: 'password123', name: 'Michael Brown (Asst Prof)' },
-      { id: '1002', password: 'password123', name: 'Sarah Johnson (Vice Dean)' },
-      { id: '1005', password: 'password123', name: 'Robert Wilson (President)' }
+     
     ],
     hr: [
       { id: '1004', password: 'password123', name: 'Emily Davis (HR Rep)' }
@@ -187,7 +184,7 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
                         onClick={() => setUserType('employee')}
                         className={`px-4 py-3 rounded-xl border-2 transition-all ${
                           userType === 'employee'
-                            ? 'border-blue-700 bg-blue-700 text-blue-700'
+                            ? 'border-purple-600 bg-blue-700 text-blue-700'
                             : 'border-gray-200 hover:border-gray-300 text-gray-600'
                         }`}
                       >
