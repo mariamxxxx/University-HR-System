@@ -239,9 +239,16 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
                     </div>
                   </div>
 
+                  {userType === 'admin' && (
+                    <div className="rounded-xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm text-pink-700">
+                      <p>ID: <span className="font-mono">{credentials.admin[0].id}</span></p>
+                      <p>Password: <span className="font-mono">{credentials.admin[0].password}</span></p>
+                    </div>
+                  )}
+
                   <div>
                     <label htmlFor="userId" className="block text-gray-700 mb-2">
-                      {userType === 'admin' ? 'Admin ID' : 'Employee ID'}
+                      {userType === 'admin' ? 'Admin ID ' : 'Employee ID'}
                     </label>
                     <input
                       type={userType === 'admin' ? 'text' : 'number'}
