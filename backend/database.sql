@@ -1992,6 +1992,7 @@ GO
 
 ------------- 2.5 m --------------
 
+
 CREATE or alter PROC Upperboard_approve_unpaids
 @request_ID int,
 @upperboard_ID int
@@ -2263,7 +2264,7 @@ NULL,NULL,'09-01-2024',NULL,'HR') , --10 HR MANAGER
 'Korba',
 'F','Saturday',20,'1234567890123220','active','full_time',
 'Mariam Alaa','01234567861',
-3,12,'09-01-2010',NULL,'MET'), --12 vice dean, lecturer !!
+3,12,'09-01-2010',NULL,'MET'), --12 vice dean MET, lecturer !!
 
 ('Ali','Mohamed','ali.mohamed@guc.edu.eg','am@123',
 'New Cairo',
@@ -2812,3 +2813,53 @@ values (5,19,'pending')
 insert into Employee_Approve_Leave (Emp1_ID,leave_ID,status)
 values (5,20,'pending')
 ------------------------------------------------------
+go
+select * from Employee_Approve_Leave
+truncate table  Employee_Approve_Leave
+go
+select * from leave
+--truncate table leave
+
+DECLARE @req_id INT = 123;  
+
+SELECT 
+  EAL.leave_ID,
+  EAL.Emp1_ID AS approver_id,
+  ER.role_name,
+  E.first_name,
+  E.last_name,
+  E.dept_name,
+  EAL.status
+FROM Employee_Approve_Leave EAL
+JOIN Employee E ON E.employee_id = EAL.Emp1_ID
+JOIN Employee_Role ER ON ER.emp_ID = E.employee_id
+WHERE EAL.leave_ID = @req_id
+  AND ER.role_name = 'Vice Dean';
+
+
+
+
+
+  SELECT TOP 5 L.request_ID, L.start_date, L.end_date, L.final_approval_status
+FROM Leave L
+WHERE L.final_approval_status = 'Pending'
+ORDER BY L.request_ID DESC;
+
+-- For the most recent one, check who is in the approvals table
+-- Replace @req_id with an actual request_ID from above
+DECLARE @req_id INT = 1;  -- Change to actual ID
+
+SELECT 
+  EAL.leave_ID,
+  EAL.Emp1_ID,
+  E.first_name,
+  E.last_name,
+  ER.role_name,
+  E.dept_name,
+  EAL.status
+FROM Employee_Approve_Leave EAL
+JOIN Employee E ON E.employee_id = EAL.Emp1_ID
+JOIN Employee_Role ER ON ER.emp_ID = E.employee_id
+WHERE EAL.leave_ID = @req_id
+ORDER BY ER.role_name;
+

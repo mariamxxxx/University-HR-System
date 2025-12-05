@@ -924,7 +924,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                           onClick={async () => {
                             setLoading(true);
                             try {
-                              const result = await api.approveLeave(user.employee_ID, approval.Leave_ID, 'approved');
+                              const result = approval.leave?.type === 'annual'
+                                ? await api.approveAnnualLeave(approval.Leave_ID, user.employee_ID, approval.leave?.replacement_emp ?? null)
+                                : await api.approveUnpaidLeave(approval.Leave_ID, user.employee_ID);
                               toast.success(result.message);
                               const refreshResult = await api.getPendingApprovals(user.employee_ID);
                               setPendingApprovals(refreshResult.data || []);
@@ -942,7 +944,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                           onClick={async () => {
                             setLoading(true);
                             try {
-                              const result = await api.approveLeave(user.employee_ID, approval.Leave_ID, 'rejected');
+                              const result = approval.leave?.type === 'annual'
+                                ? await api.approveAnnualLeave(approval.Leave_ID, user.employee_ID, approval.leave?.replacement_emp ?? null)
+                                : await api.approveUnpaidLeave(approval.Leave_ID, user.employee_ID);
                               toast.success(result.message);
                               const refreshResult = await api.getPendingApprovals(user.employee_ID);
                               setPendingApprovals(refreshResult.data || []);

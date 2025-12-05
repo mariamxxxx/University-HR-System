@@ -2,8 +2,8 @@
 const sql = require("mssql");
 
 const config = {
-    user: "mariamNodeUser", // SQL login username
-    password: "password123", // SQL login password
+    user: "rokaia", // SQL login username
+    password: "Roka123", // SQL login password
     database: "University_HR_ManagementSystem2", // your database name
     server: "localhost\\SQLEXPRESS", // or "localhost,1433" if using port
     options: {
