@@ -303,138 +303,6 @@ app.get("/api/employee/payroll/:employeeId", async (req, res) => {
     }
 });
 
-//display all attendance records for all employees for yesterday
-app.get("/yesterday-all-attendance", async (req, res) => {
-  try {
-        const pool =await poolPromise;
-        const result = await pool.request().query('SELECT * FROM allEmployeeAttendance');
-
-        res.json({ success: true, data: result.recordset });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-//display all performance records for winter semester
-app.get("/winter-performance", async (req, res) => {
-    try {
-        const pool =await poolPromise;
-        const result = await pool.request().query('SELECT * FROM allPerformance');
-
-        res.json({ success: true, data: result.recordset });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-//remove holiday attendance for all employees
-app.post('/remove-holiday', async (req, res) => {
-  try {
-    const pool = await poolPromise;
-    await pool.request().execute('Remove_Holiday');
-
-    res.json({
-      success: true,
-      message: "Holiday attendance removed successfully"
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-//remove day off for a certain employee
-app.post('/remove-dayoff', async (req, res) => {
-  const { employeeId } = req.body;
-
-  try {
-    const pool = await poolPromise;
-
-    await pool.request()
-      .input("employee_ID", sql.Int, employeeId)
-      .execute("Remove_DayOff");
-
-    res.json({
-      success: true,
-      message: `Employee day-off records were removed successfully`
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-//remove approved leave for a certain employee
-app.post('/remove-approved-leaves', async (req, res) => {
-  const { employeeId } = req.body;
-
-  try {
-    const pool = await poolPromise;
-
-    await pool.request()
-      .input("employee_ID", sql.Int, employeeId)
-      .execute("Remove_Approved_Leaves");
-
-    res.json({
-      success: true,
-      message: `Employee approved leave records were removed successfully`
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-//Add a new record to employee replace employee
-app.post('/employee-replace-employee', async (req, res) => {
-  const { emp1, emp2, fromDate, toDate} = req.body;
-
-  try {
-    const pool = await poolPromise;
-
-    await pool.request()
-      .input("Emp1_ID", sql.Int, emp1)
-      .input("Emp2_ID", sql.Int, emp2)
-      .input("from_Date", sql.Date, fromDate)
-      .input("to_Date", sql.Date, toDate)
-      .execute("Replace_Employee");
-    res.json({
-      success: true,
-      message: `Employee replacement recorded successfully`
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-//Update employee status
-app.post('/update-employment-status', async (req, res) => {
-  const { employeeId } = req.body;
-
-  try {
-    const pool = await poolPromise;
-
-    await pool.request()
-      .input("Employee_ID", sql.Int, employeeId)
-      .execute("Update_Employment_Status");
-    res.json({
-      success: true,
-      message: `Employment status updated successfully`
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-
 //-------------------------------------------------- ROKAIA --------------------------------------------------------//
 
 // Get roles for an employee and whether they are an approver (Dean/Vice Dean/President)
@@ -1068,6 +936,140 @@ app.post("/initiate-attendance", async (req, res) => {
 
 
 //-------------------------------------------------- HEND --------------------------------------------------------//
+
+
+//display all attendance records for all employees for yesterday
+app.get("/yesterday-all-attendance", async (req, res) => {
+  try {
+        const pool =await poolPromise;
+        const result = await pool.request().query('SELECT * FROM allEmployeeAttendance');
+
+        res.json({ success: true, data: result.recordset });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+//display all performance records for winter semester
+app.get("/winter-performance", async (req, res) => {
+    try {
+        const pool =await poolPromise;
+        const result = await pool.request().query('SELECT * FROM allPerformance');
+
+        res.json({ success: true, data: result.recordset });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+//remove holiday attendance for all employees
+app.post('/remove-holiday', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    await pool.request().execute('Remove_Holiday');
+
+    res.json({
+      success: true,
+      message: "Holiday attendance removed successfully"
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//remove day off for a certain employee
+app.post('/remove-dayoff', async (req, res) => {
+  const { employeeId } = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("employee_ID", sql.Int, employeeId)
+      .execute("Remove_DayOff");
+
+    res.json({
+      success: true,
+      message: `Employee day-off records were removed successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//remove approved leave for a certain employee
+app.post('/remove-approved-leaves', async (req, res) => {
+  const { employeeId } = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("employee_ID", sql.Int, employeeId)
+      .execute("Remove_Approved_Leaves");
+
+    res.json({
+      success: true,
+      message: `Employee approved leave records were removed successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//Add a new record to employee replace employee
+app.post('/employee-replace-employee', async (req, res) => {
+  const { emp1, emp2, fromDate, toDate} = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("Emp1_ID", sql.Int, emp1)
+      .input("Emp2_ID", sql.Int, emp2)
+      .input("from_Date", sql.Date, fromDate)
+      .input("to_Date", sql.Date, toDate)
+      .execute("Replace_Employee");
+    res.json({
+      success: true,
+      message: `Employee replacement recorded successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//Update employee status
+app.post('/update-employment-status', async (req, res) => {
+  const { employeeId } = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("Employee_ID", sql.Int, employeeId)
+      .execute("Update_Employment_Status");
+    res.json({
+      success: true,
+      message: `Employment status updated successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
 
 // Start server only after DB is ready
 poolPromise
