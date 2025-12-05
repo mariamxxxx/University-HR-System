@@ -148,7 +148,7 @@ const result = await api.getPendingLeaves2(hrId);
         if (typedApi.hrApproveLeave) {
           result = await typedApi.hrApproveLeave(requestId, hrId, leaveType);
         } else if (typedApi.approveAnnualLeave2) {
-          result = await typedApi.approveAnnualLeave(requestId, hrId, leaveType);
+          result = await typedApi.approveAnnualLeave2(requestId, hrId, leaveType);
         } else {
           result = await typedApi.processLeave?.(requestId, hrId, leaveType);
         }
