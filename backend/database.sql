@@ -1429,7 +1429,7 @@ AS
 Begin
 Declare @success BIT
 IF EXISTS (
-	SELECT 1 FROM Employee E WHERE employee_id=@employee_ID AND password=@password and dept_name <> 'HR')
+	SELECT 1 FROM Employee E WHERE employee_id=@employee_ID AND password=@password and (dept_name <> 'HR' OR dept_name IS NULL))
    SET @success =1
 ELSE
    SET @success =0;
@@ -1437,6 +1437,7 @@ Return @success
 END
 
 GO
+
 
 ------------2.5 b MyPerformance ---------
 CREATE or alter FUNCTION MyPerformance
@@ -2201,122 +2202,103 @@ last_working_date,dept_name)
 values  ('Jack','John','jack.john@guc.edu.eg','123','new cairo',
 'M','Saturday',0,'1234567890123456','active','full_time',
 'Sarah','01234567892',
-30,6,'09-01-2025',null,'MET'),
+30,6,'09-01-2025',null,'MET'), --1 TA
 
 ('Ahmed','Zaki','ahmed.zaki@guc.edu.eg','345',
 'New Giza',
 'M','Saturday',2,'1234567890123457','active','full_time',
 'Mona Zaki','01234567893',
-27,0,'09-01-2020',NULL,'BI'),
+27,0,'09-01-2020',NULL,'BI'), --2 TA
 
 ('Sarah','Sabry','sarah.sabry@guc.edu.eg','567',
 'Korba',
 'F','Thursday',5,'1234567890123458','active','full_time',
 'Hanen Turk','01234567894',
-0,4,'09-01-2020',NULL,'MET'),
+0,4,'09-01-2020',NULL,'MET'), --3 lecturer 
 
  ('Ahmed','Helmy','ahmed.helmy@guc.edu.eg','908',
 'new Cairo',
 'M','Thursday',2,'1234567890123459','active','full_time',
 'Mona Zaki','01234567895',
-8,4,'09-01-2019',NULL,'HR'),
+8,4,'09-01-2019',NULL,'HR'), --4 HR BI
 
 ('Menna','Shalaby','menna.shalaby@guc.edu.eg','670',
 'Heliopolis',
 'F','Saturday',0,'1234567890123451','active','full_time',
 'Mayan Samir','01234567896',
-6,2,'09-01-2018',NULL,'HR'), 
+6,2,'09-01-2018',NULL,'HR'), --5 HR MET
 
 ('Mohamed','Ahmed','mohamed.ahmedy@guc.edu.eg','9087',
 'Nasr City',
 'M','Saturday',7,'1234567890123452','active','part_time',
 'Marwan Samir','01234567897',
-NULL,6,'09-01-2025',NULL,'BI'),
+NULL,6,'09-01-2025',NULL,'BI'), --6 lecturer 
 
 ('Esraa','Ahmed','esraa.ahmedy@guc.edu.eg','5690',
 'New Cairo',
 'F','Saturday',2,'1234567890123453','active','full_time',
 'Magy Ahmed','01234567898',
-36,6,'09-01-2024',NULL,'Medical'),
+36,6,'09-01-2024',NULL,'Medical'),--7 med doc
 
  ('Magy','Zaki','magy.zaki@guc.edu.eg','3790',
 '6th of October city',
 'F','Thursday',4,'1234567890123454','onleave','full_time',
 'Mariam Ahmed','01234567899',
-0,6,'01-01-2023',NULL,'BI'),
+0,6,'01-01-2023',NULL,'BI'), --8 TA
 
 ('Amr','Diab','amr.diab@guc.edu.eg','8954',
 'Heliopolis',
 'M','Saturday',4,'1234567890123450','active','full_time',
 'Dina','01234567891',
-10,10,'09-01-2023',NULL,'MET'),
+10,10,'09-01-2023',NULL,'MET'), --9 TA
 
  ('Marwan','Khaled','marwan.Khaled@guc.edu.eg','9023',
 'New Cairo',
 'M','Saturday',12,'1234567890123455','active','full_time',
 'Omar Ahmed','01234567840',
-NULL,NULL,'09-01-2024',NULL,'HR') ,
+NULL,NULL,'09-01-2024',NULL,'HR') , --10 HR MANAGER 
 
 ('Hazem','Ali','hazem.ali@guc.edu.eg','h@123',
 'New Giza',
 'M','Saturday',30,'1234567890123420','active','full_time',
 'Fatma Alaa','01234567871',
-55,25,'09-01-2008',NULL,'MET'),
+55,25,'09-01-2008',NULL,'MET'), --11 dean, lecturer !! tmam
 
 ('Hadeel','Adel','hadeel.adel@guc.edu.eg','ha@123',
 'Korba',
 'F','Saturday',20,'1234567890123220','active','full_time',
 'Mariam Alaa','01234567861',
-3,12,'09-01-2010',NULL,'MET'),
+3,12,'09-01-2010',NULL,'MET'), --12 vice dean, lecturer !!
 
 ('Ali','Mohamed','ali.mohamed@guc.edu.eg','am@123',
 'New Cairo',
 'M','Saturday',35,'1234567890123460','active','full_time',
 'Hesham Ali','01234567761',
-null,null,'09-01-2002',null,null),
+null,null,'09-01-2002',null,null), --13 dean, lecturer !! check with aisel
 
  ('Donia','Tarek','donia.tarek@guc.edu.eg','dt@123',
 'New Cairo',
 'F','Saturday',22,'1234567891123120','active','full_time',
 'Yasmine Tarek','01234267761',
-null,null,'09-01-2006',null,null), 
+null,null,'09-01-2006',null,null),  --14 vice dean, lecturer !! check with aisel
 
 ('Karim','Abdelaziz','karim.abdelaziz@guc.edu.eg',
 'ka@123','New Cairo','M','Wednesday',4,'1234567890123461','resigned','full_time',
 'Maged ElKedwany','01234277761',
-0,0,'09-01-2020','09-20-2025','MET'),
+0,0,'09-01-2020','09-20-2025','MET'), --15 president
 
 ('Ghada','Adel','ghada.adel@guc.edu.eg','ga@123',
 'Korba',
 'F','Saturday',2,'1234567811123120','notice_period','full_time',
 'Taha Hussein','01234277761',
-0,4,'01-01-2024',NULL,'BI');
+0,4,'01-01-2024',NULL,'BI') --16 vice president
 
-insert into Employee (first_name,last_name,email,
-password,address,gender,official_day_off,years_of_experience,
-national_ID,employment_status, type_of_contract,emergency_contact_name,
-emergency_contact_phone,annual_balance,accidental_balance,hire_date,
-last_working_date,dept_name)
-values  ('mariam','mohamed','mariam.mohamed@guc.edu.eg','123','new cairo',
-'f','Saturday',0,'1234567890123456','active','part_time',
-'Sarah','01234567892',
-30,6,'09-01-2025',null,'BI');
 
--- insert resigned employee with last working day before now
-insert into Employee (first_name,last_name,email,
-password,address,gender,official_day_off,years_of_experience,
-national_ID,employment_status, type_of_contract,emergency_contact_name,
-emergency_contact_phone,annual_balance,accidental_balance,hire_date,
-last_working_date,dept_name)
-values  ('Youssef','Hassan','m@gmail.com','123','new cairo',
-'M','Saturday',0,'1234567890123499','resigned','full_time',
-'Sara','01234567899',
-30,6,'09-01-2020','05-01-2024','MET');
 
 
 SELECT * FROM Employee
 ----------------------------
-insert into Employee_Phone (emp_id,phone_num) values (1,'01234567890')
+insert into Employee_Phone (emp_id,phone_num) values (1,'01234567890') 
 insert into Employee_Phone (emp_id,phone_num) values (2,'01234567891')
 insert into Employee_Phone (emp_id,phone_num) values (3,'01234567892')
 insert into Employee_Phone (emp_id,phone_num) values (4,'01234567893')
@@ -2546,7 +2528,11 @@ values ('10-27-2025','10-30-2025','10-30-2025','pending')
 
 insert into leave (date_of_request,start_date,end_date
 ,final_approval_status)
-values ('09-13-2025','11-13-2025','03-13-2026','rejected')
+values ('12-13-2025','01-13-2026','03-13-2026','rejected')
+--mine
+insert into leave (date_of_request,start_date,end_date
+,final_approval_status)
+values ('12-13-2025','1-13-2026','03-13-2026','rejected')
 
 select * from Leave
 ----------------------------------------
@@ -2560,6 +2546,13 @@ insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
 values (4,11,12)
 insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
 values (5,5,4)
+--mine
+
+insert into Annual_Leave (request_ID,emp_ID,replacement_emp)
+values (23,1,4)
+
+
+
 
 select * from Annual_Leave
 ---------------
@@ -2567,7 +2560,11 @@ insert into Accidental_Leave (request_ID,emp_ID)
 values (6,1)
 insert into Accidental_Leave (request_ID,emp_ID) 
 values (8,3)
+insert into Accidental_Leave (request_ID,emp_ID) 
+values (22,1)
 
+insert into Accidental_Leave (request_ID,emp_ID) 
+values (24,1)
 select * from Accidental_Leave
 ------------------
 insert into Medical_Leave (request_ID,insurance_status,disability_details,type,Emp_ID)
@@ -2663,6 +2660,12 @@ insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('09-8-2025',null,null,'absent',1)
 insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('10-15-2025','08:30','16:00','attended',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-1-2025',null,null,'absent',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-2-2025',null,null,'absent',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-3-2025','08:30','16:00','attended',1)
 
 select * from Attendance
 -----------------------------------------
@@ -2720,7 +2723,9 @@ insert into Payroll (payment_date,final_salary_amount,from_date,to_date,comments
 values ('10-01-2025',52733.34,'09-01-2025','09-30-2025','Missing Hours',0,3266.66,9)
 insert into Payroll (payment_date,final_salary_amount,from_date,to_date,comments,bonus_amount,deductions_amount,emp_ID)
 values ('04-01-2025',276540,'03-01-2025','03-31-2025','Overtime Factor',540,0,11)
-
+--AW
+insert into Payroll (payment_date,final_salary_amount,from_date,to_date,comments,bonus_amount,deductions_amount,emp_ID)
+values ('11-01-2025',38666.67,'10-01-2025','10-30-2025','Has deduction',0,1333.33,1)
 
 select * from Payroll
 
