@@ -752,18 +752,13 @@ app.get("/api/pending-approvals/:employeeId", async (req, res) => {
 app.get("/view-employees", async (req, res) => {
     try {
         const pool = await poolPromise;
-        
-        // Call the stored procedure
-        await pool
+        const result = await pool
             .request()
-            .input("request_ID", sql.Int, request_ID)
-            .input("HR_ID", sql.Int, HR_ID)
-            .execute("HR_approval_an_acc");
-            
-        res.json({ success: true, message: "Leave processed successfully" });
+            .query("SELECT * FROM allEmployeeProfiles");
+        res.json(result.recordset);
     } catch (err) {
-        console.error("Error approving leave:", err);
-        res.status(500).json({ success: false, message: "Server error", error: err.message });
+        console.error("Error fetching employees:", err);
+        res.status(500).json({ error: "Failed to fetch employees" });
     }
 });
 
