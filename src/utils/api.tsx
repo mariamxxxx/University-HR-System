@@ -1096,7 +1096,7 @@ export const api = {
       const response = await fetch(`${API_BASE_URL}/deduction-hours`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employee_ID }),
+        body: JSON.stringify({ employee_id: employee_ID }),
       });
       const json = await safeJsonResponse(response);
       if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
@@ -1112,7 +1112,7 @@ export const api = {
       const response = await fetch(`${API_BASE_URL}/deduction-days`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employee_ID }),
+        body: JSON.stringify({ employee_id: employee_ID }),
       });
       const json = await safeJsonResponse(response);
       if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
@@ -1128,7 +1128,7 @@ export const api = {
       const response = await fetch(`${API_BASE_URL}/deduction-unpaid`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employee_ID }),
+        body: JSON.stringify({ employee_id: employee_ID }),
       });
       const json = await safeJsonResponse(response);
       if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };

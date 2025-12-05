@@ -2686,6 +2686,7 @@ values (10,'10-01-2025',3266.66,'missing_hours','finalized',null,null)
 
 select * from Deduction
 
+select * from attendance
 
 
 ------------------
@@ -2792,3 +2793,4 @@ insert into Employee_Approve_Leave (Emp1_ID,leave_ID,status)
 values (5,20,'pending')
 ------------------------------------------------------
 
+select * from deduction
