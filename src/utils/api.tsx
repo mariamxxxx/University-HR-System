@@ -243,6 +243,15 @@ let mockData = {
       total_duration: null,
       status: 'absent',
       emp_ID: 1002
+    },
+    {
+      attendance_ID: 7,
+      date: '2024-12-3',
+      check_in_time: null,
+      check_out_time: null,
+      total_duration: null,
+      status: 'absent',
+      emp_ID: 1002
     }
   ],
   leaves: [
@@ -602,133 +611,103 @@ export const api = {
 
   // Get yesterday's attendance
   getYesterdayAttendance: async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const yesterdayDate = getYesterdayDate();
-    const yesterdayAttendance = mockData.attendance
-      .filter(a => a.date === yesterdayDate)
-      .map(a => {
-        const emp = mockData.employees.find(e => e.employee_ID === a.emp_ID);
-        return {
-          'Employee Name': emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown',
-          ...a
-        };
-      });
-    return { success: true, data: yesterdayAttendance };
+    const res = await fetch("http://localhost:5000/yesterday-all-attendance");
+    const data = await res.json();
+    if (!data.success) return { success: false };
+
+    return { success: true, data: data.data };
   },
 
   // Get winter performance
   getWinterPerformance: async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const winter = mockData.performance
-      .filter(p => p.semester.startsWith('W'))
-      .map(p => {
-        const emp = mockData.employees.find(e => e.employee_ID === p.emp_ID);
-        return {
-          'Employee Name': emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown',
-          ...p
-        };
-      });
-    return { success: true, data: winter };
+    const res = await fetch("http://localhost:5000/winter-performance");
+    const data = await res.json();
+    if (!data.success) return { success: false };
+
+    return { success: true, data: data.data };
   },
 
   // Remove holiday attendance
   removeHolidayAttendance: async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    let removedCount = 0;
-    mockData.holidays.forEach(holiday => {
-      const toRemove = mockData.attendance.filter(a => {
-        const attDate = new Date(a.date);
-        const fromDate = new Date(holiday.from_date);
-        const toDate = new Date(holiday.to_date);
-        return attDate >= fromDate && attDate <= toDate;
-      });
-      removedCount += toRemove.length;
+   try {
+    const response = await fetch("http://localhost:5000/remove-holiday", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
     });
-    mockData.attendance = mockData.attendance.filter(a => {
-      return !mockData.holidays.some(h => {
-        const attDate = new Date(a.date);
-        const fromDate = new Date(h.from_date);
-        const toDate = new Date(h.to_date);
-        return attDate >= fromDate && attDate <= toDate;
-      });
-    });
-    return { success: true, message: `Removed ${removedCount} attendance records during holidays` };
+
+    const result = await response.json();
+    return { success: true, message: `Removed official holiday attendance records` }
+    } catch (error) {
+    return { success: false, message: "Frontend error: " + error };
+    }
   },
 
   // Remove day-off
   removeDayOff: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const employee = mockData.employees.find(e => e.employee_ID === employeeId);
-    if (!employee) {
-      return { success: false, message: 'Employee not found' };
-    }
-    
-    const currentMonth = getCurrentMonth();
-    const toRemove = mockData.attendance.filter(a => 
-      a.emp_ID === employeeId &&
-      a.status === 'absent' &&
-      new Date(a.date).getMonth() + 1 === currentMonth &&
-      getDayOfWeek(a.date) === employee.official_day_off
-    );
-    
-    mockData.attendance = mockData.attendance.filter(a => !toRemove.includes(a));
-    return { success: true, message: `Removed ${toRemove.length} unattended day-off records` };
+   try {
+    const response = await fetch("http://localhost:5000/remove-dayoff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ employeeId })
+    });
+
+    const result = await response.json();
+    return { success: true, message: `Removed unattended day-off attendance records` }
+
+  } catch (error) {
+    return { success: false, message: "Frontend error: " + error };
+  }
   },
 
   // Remove approved leaves
   removeApprovedLeaves: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const approvedLeaves = mockData.leaves.filter(l => 
-      l.final_approval_status === 'approved' && l.emp_ID === employeeId
-    );
-    
-    let removedCount = 0;
-    approvedLeaves.forEach(leave => {
-      const toRemove = mockData.attendance.filter(a => {
-        const attDate = new Date(a.date);
-        const startDate = new Date(leave.start_date);
-        const endDate = new Date(leave.end_date);
-        return attDate >= startDate && attDate <= endDate;
-      });
-      removedCount += toRemove.length;
+   try {
+    const response = await fetch("http://localhost:5000/remove-approved-leaves", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ employeeId })
     });
-    
-    mockData.attendance = mockData.attendance.filter(a => {
-      return !approvedLeaves.some(l => {
-        const attDate = new Date(a.date);
-        const startDate = new Date(l.start_date);
-        const endDate = new Date(l.end_date);
-        return attDate >= startDate && attDate <= endDate;
-      });
-    });
-    
-    return { success: true, message: `Removed ${removedCount} attendance records for approved leaves` };
+
+    const result = await response.json();
+    return { success: true, message: `Removed approved leaves from attendance records` }
+
+  } catch (error) {
+    return { success: false, message: "Frontend error: " + error };
+  }
   },
 
   // Replace employee
   replaceEmployee: async (emp1: number, emp2: number, fromDate: string, toDate: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return { success: true, message: 'Employee replacement recorded successfully' };
+    try {
+    const response = await fetch("http://localhost:5000/employee-replace-employee", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emp1, emp2, fromDate, toDate })
+    });
+
+    const result = await response.json();
+    return { success: true, message: `Employee replacement recorded successfully` }
+
+  } catch (error) {
+    return { success: false, message: "Frontend error: " + error };
+  }
   },
 
   // Update employment status
   updateEmploymentStatus: async (employeeId: number) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const employee = mockData.employees.find(e => e.employee_ID === employeeId);
-    if (!employee) {
-      return { success: false, message: 'Employee not found' };
-    }
-    
-    const currentDate = getCurrentDate();
-    const isOnLeave = mockData.leaves.some(l => 
-      l.emp_ID === employeeId &&
-      l.final_approval_status !== 'rejected' &&
-      new Date(l.start_date) <= new Date(currentDate) &&
-      new Date(l.end_date) >= new Date(currentDate)
-    );
-    
-    employee.employment_status = isOnLeave ? 'onleave' : 'active';
-    return { success: true, message: `Employment status updated to ${employee.employment_status}` };
+     try {
+    const response = await fetch("http://localhost:5000/update-employment-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ employeeId })
+    });
+
+    const result = await response.json();
+    return { success: true, message: `Employment status updated successfully` }
+
+  } catch (error) {
+    return { success: false, message: "Frontend error: " + error };
+  }
   },
 
   // Get employee performance

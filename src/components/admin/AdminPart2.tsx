@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '../../utils/api.tsx';
+import { formatTime } from '../../utils/time';
 
 export function AdminPart2() {
   const [activeSection, setActiveSection] = useState<string>('yesterday-attendance');
@@ -123,6 +124,8 @@ export function AdminPart2() {
     }
   }, [activeSection]);
 
+  
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -224,8 +227,8 @@ export function AdminPart2() {
                       <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4 text-gray-900">{att['Employee Name']}</td>
                         <td className="py-3 px-4 text-gray-600">{att.date}</td>
-                        <td className="py-3 px-4 text-gray-600">{att.check_in_time || 'N/A'}</td>
-                        <td className="py-3 px-4 text-gray-600">{att.check_out_time || 'N/A'}</td>
+                        <td className="py-3 px-4 text-gray-600">{formatTime(att.check_in_time)}</td>
+                        <td className="py-3 px-4 text-gray-600">{formatTime(att.check_out_time)}</td>
                         <td className="py-3 px-4 text-gray-600">{att.total_duration || 'N/A'}</td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex px-2 py-1 rounded text-xs ${
@@ -304,36 +307,31 @@ export function AdminPart2() {
             >
               {loading ? 'Processing...' : 'Remove Holiday Attendance'}
             </button>
+            <div className="mt-3">
+              <form onSubmit={removeDayOff} className="flex items-center gap-3">
+                <label htmlFor="remove-dayoff-emp" className="sr-only">Employee ID</label>
+                <input
+                  id="remove-dayoff-emp"
+                  type="number"
+                  placeholder="Employee ID"
+                  value={employeeIdForDayOff}
+                  onChange={(e) => setEmployeeIdForDayOff(e.target.value)}
+                  className="w-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Processing...' : 'Remove Day-off Records'}
+                </button>
+              </form>
+            </div>
           </div>
         )}
 
-        {activeSection === 'remove-dayoff' && (
-          <div>
-            <h3 className="text-gray-900 mb-4">Remove Unattended Day-off</h3>
-            <p className="text-gray-600 mb-4">
-              Remove absent attendance records for an employee's official day-off in the current month.
-            </p>
-            <form onSubmit={removeDayOff} className="space-y-4 max-w-md">
-              <div>
-                <label className="block text-gray-700 mb-2">Employee ID</label>
-                <input
-                  type="number"
-                  value={employeeIdForDayOff}
-                  onChange={(e) => setEmployeeIdForDayOff(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : 'Remove Day-off Records'}
-              </button>
-            </form>
-          </div>
-        )}
+        
 
         {activeSection === 'remove-leaves' && (
           <div>

@@ -365,13 +365,10 @@ GO
 -- c)
 CREATE VIEW allPerformance
 AS
-SELECT P.*
-FROM Performance P
-INNER JOIN Employee E
-ON p.emp_id = E.employee_ID
-WHERE P.SEMESTER LIKE 'W%';
+  SELECT (E.first_name+' ' +E.last_name) AS 'Employee Name' , P.*
+    FROM PERFORMANCE P , EMPLOYEE E
+    WHERE P.emp_ID=E.employee_ID AND semester LIKE 'W%';
 GO
-
 
 -- d) 
 CREATE VIEW allRejectedMedicals
@@ -2659,6 +2656,11 @@ insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('12-1-2025',null,null,'absent',1)
 insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('12-2-2025',null,null,'absent',1)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-3-2025','08:30','16:00','attended',1)
+
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-4-2025','08:30','16:00','attended',8)
 insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('12-3-2025','08:30','16:00','attended',1)
 
