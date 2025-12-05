@@ -3,23 +3,8 @@ const ROOT_BASE = "http://localhost:5000";
 const HR_BASE = `${ROOT_BASE}/api/hr`; // use for payroll endpoints that live under /api/hr
 
 // API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:5000';
 
-// Helper function to get stored employee ID
-export const getStoredEmployeeId = (): number | null => {
-  const id = localStorage.getItem('employee_id');
-  return id ? parseInt(id) : null;
-};
-
-// Helper function to store employee ID
-export const setStoredEmployeeId = (id: number): void => {
-  localStorage.setItem('employee_id', id.toString());
-};
-
-// Helper function to clear employee ID (logout)
-export const clearStoredEmployeeId = (): void => {
-  localStorage.removeItem('employee_id');
-};
 
 // Mock data store for prototype testing
 let mockData = {
@@ -677,13 +662,7 @@ export const api = {
     }
   },
 
-      if (!response.ok) {
-        return { success: false, message: json?.message || `HTTP ${response.status}`, data: [] };
-      }
-    });
     
-    return { success: true, message: `Initiated attendance for ${count} employees` };
-  },
 
   // Get yesterday's attendance
   getYesterdayAttendance: async () => {
@@ -1304,20 +1283,7 @@ export const api = {
     }
   },
 
-      const response = await fetch(`${ROOT_BASE}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ request_ID: requestId, HR_ID: hrId, leave_type: leaveType }),
-      });
 
-      const json = await safeJsonResponse(response);
-      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
-      return json;
-    } catch (err: any) {
-      console.error("processLeave error:", err);
-      return { success: false, message: `Network error: ${err.message || err}` };
-    }
-  },
 
  
   // Get all leaves with employee info
