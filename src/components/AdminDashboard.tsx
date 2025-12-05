@@ -94,7 +94,6 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     { id: 'employees', name: 'Employees', icon: null },
     { id: 'attendance', name: 'Attendance', icon: null },
     { id: 'leaves', name: 'Leaves', icon: null },
-    { id: 'payroll', name: 'Payroll', icon: null },
     { id: 'performance', name: 'Performance', icon: null },
     { id: 'operations', name: 'Operations', icon: null }
   ];
@@ -480,7 +479,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     setLoading(false);
                   }
                 }}
-                className="mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
+                className="w-full mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
               >
                 View Yesterday's Attendance
               </button>
@@ -691,7 +690,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <div key={idx} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-gray-900">{perf['emp_ID']}</p>
+                        <p className="inline-flex px-2 py-1 rounded-full text-xs bg-blue-100 text-gray-900">{perf['emp_ID']}</p>
                         <p className="text-gray-900">{perf['Employee Name']}</p>
                         <p className="text-gray-600 text-sm">{perf.semester} - {perf.comments}</p>
                       </div>
@@ -756,7 +755,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   />
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-gray-500 mb-1 text-center">From</label>
+                      <label className="block text-gray-500 mb-1 text-center">From Date</label>
                       <input
                         type="date"
                         value={replacementData.from_date}
@@ -766,7 +765,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-500 mb-1 text-center">To</label>
+                      <label className="block text-gray-500 mb-1 text-center">To Date</label>
                       <input
                         type="date"
                         value={replacementData.to_date}
