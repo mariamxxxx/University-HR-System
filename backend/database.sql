@@ -480,9 +480,6 @@ END;
 
 GO
 
-select * from holiday;
-
-
 
 CREATE OR ALTER PROCEDURE Initiate_Attendance
 AS
@@ -500,9 +497,6 @@ BEGIN
 	);
 END;
 GO
-
-
-select * from attendance 
 
 
 
@@ -529,6 +523,7 @@ BEGIN
 		  AND [date] = @today
 	)
 	BEGIN
+		PRINT 'No attendance record found for this employee today.'
 	END
 	ELSE 
 	BEGIN
