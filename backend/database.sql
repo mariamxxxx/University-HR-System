@@ -1,6 +1,6 @@
-create DATABASE University_HR_ManagementSystem;
+create DATABASE University_HR_ManagementSystem2;
 GO
-USE University_HR_ManagementSystem;
+USE University_HR_ManagementSystem2;
 GO
 
 CREATE FUNCTION HRSalary_calculation
@@ -414,8 +414,11 @@ WHERE last_working_date< CURRENT_TIMESTAMP AND employment_status= 'resigned');
 
 GO
 
--- 2.3 c) Update the employee’s employment_status daily based on whether the employee is on leave or active.
 
+
+-- 2.3 c) Update the employee’s employment_status daily based on whether the employee is on leave or active. 15
+
+GO
 CREATE or alter PROC Update_Employment_Status @Employee_ID int
 AS 
 declare @onleave bit =dbo.Is_On_Leave ( @Employee_ID, 
@@ -448,6 +451,7 @@ to_date date
 GO
 
 
+
 CREATE OR ALTER PROCEDURE Add_Holiday
     @holiday_name VARCHAR(50),
     @from_date DATE,
@@ -476,6 +480,8 @@ END;
 
 GO
 
+select * from holiday;
+
 
 
 CREATE OR ALTER PROCEDURE Initiate_Attendance
@@ -494,6 +500,10 @@ BEGIN
 	);
 END;
 GO
+
+
+select * from attendance 
+
 
 
 --------------2.3 g ----------
@@ -519,7 +529,6 @@ BEGIN
 		  AND [date] = @today
 	)
 	BEGIN
-		PRINT 'No attendance record found for this employee today.'
 	END
 	ELSE 
 	BEGIN
@@ -534,6 +543,9 @@ END;
 GO
 ----------- 2.3 h -------------
 
+select * from attendance;
+
+go
 CREATE OR ALTER PROCEDURE Remove_Holiday
 AS
 BEGIN
@@ -2676,25 +2688,25 @@ values (5,'Excellent','S25',10)
 
 select * from Performance
 ------------------------------------------------
--- insert into Deduction (emp_ID,date,amount,type,
--- status,unpaid_ID,attendance_ID)
--- values (1,'2025-10-01',1333.33,'missing_days','finalized',null,7)
+insert into Deduction (emp_ID,date,amount,type,
+status,unpaid_ID,attendance_ID)
+values (1,'10-01-2025',1333.33,'missing_days','finalized',null,7)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (1,'2025-10-28',1333.33,'missing_days','pending',null,5)
+values (1,'10-28-2025',1333.33,'missing_days','pending',null,5)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (2,'2025-09-01',30400,'unpaid','finalized',13,null)
+values (2,'09-01-2025',30400,'unpaid','finalized',13,null)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (2,'2025-10-01',14400,'unpaid','finalized',13,null)
+values (2,'10-01-2025',14400,'unpaid','finalized',13,null)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (10,'2025-10-01',3266.66,'missing_hours','finalized',null,null)
+values (10,'10-01-2025',3266.66,'missing_hours','finalized',null,null)
 
 select * from Deduction
 
@@ -2805,5 +2817,3 @@ values (5,19,'pending')
 insert into Employee_Approve_Leave (Emp1_ID,leave_ID,status)
 values (5,20,'pending')
 ------------------------------------------------------
-
-

@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '../utils/api.tsx';
-import { fetchEmployeesFromBackend } from './admin/AdminPart1';
+import {fetchEmployeesFromBackend, 
+        fetchEmployeesPerDeptFromBackend, 
+        fetchRejectedMedicalsFromBackend,
+        removeResignedDeductionsFromBackend,
+        updateAttendanceFromBackend,
+        addHolidayToBackend,
+        initiateAttendanceInBackend
+ } from './admin/AdminPart1';
 
 
 interface AdminDashboardProps {
@@ -25,6 +32,36 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [employeeIdForStatus, setEmployeeIdForStatus] = useState('');
   const [replacementData, setReplacementData] = useState({ Emp1_ID: '', Emp2_ID: '', from_date: '', to_date: '' });
 
+  const statusCounts = employees.reduce(
+    (acc, emp) => {
+      if (emp.employment_status === 'active') acc.active += 1;
+      if (emp.employment_status === 'onleave') acc.onLeave += 1;
+      return acc;
+    },
+    { active: 0, onLeave: 0 }
+  );
+
+  const statusCards = [
+    {
+      label: 'Total Employees',
+      value: employees.length,
+      description: 'Organization-wide',
+      gradient: 'from-indigo-500 to-indigo-600'
+    },
+    {
+      label: 'Active Employees',
+      value: statusCounts.active,
+      description: 'Currently on duty',
+      gradient: 'from-green-500 to-emerald-600'
+    },
+    {
+      label: 'On Leave',
+      value: statusCounts.onLeave,
+      description: 'Approved leaves',
+      gradient: 'from-yellow-500 to-amber-500'
+    }
+  ];
+
   useEffect(() => {
     if (activeSection === 'overview') {
       loadOverviewData();
@@ -33,18 +70,22 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadOverviewData = async () => {
     setLoading(true);
-    try {
-      const [empResult, deptResult] = await Promise.all([
-        fetchEmployeesFromBackend(),
-        api.getEmployeesPerDept()
-      ]);
-      setEmployees(empResult);
-      setEmployeesPerDept(deptResult.data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load data');
-    } finally {
-      setLoading(false);
-    }
+        try {
+          const result = await fetchEmployeesFromBackend();
+          setEmployees(result);
+
+          const deptResult = await fetchEmployeesPerDeptFromBackend();
+          const normalizedDept = deptResult.map((dept: any) => ({
+            dept_name: dept.dept_name || 'Unassigned',
+            Number_of_Employees: dept.Number_of_Employees || 0
+          }));
+          setEmployeesPerDept(normalizedDept);
+
+        } catch (error: any) {
+          toast.error(error.message);
+        } finally {
+          setLoading(false);
+        }
   };
 
   const sections = [
@@ -113,18 +154,18 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         {activeSection === 'overview' && (
           <div className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
-              {employeesPerDept.map((dept, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-6 text-white shadow-xl">
+              {statusCards.map((card) => (
+                <div key={card.label} className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-6 text-white shadow-xl`}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg opacity-90">{dept.dept_name}</h3>
+                    <h3 className="text-lg opacity-90">{card.label}</h3>
                     <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                     </div>
                   </div>
-                  <p className="text-4xl mb-1">{dept.Number_of_Employees}</p>
-                  <p className="text-sm opacity-80">employees</p>
+                  <p className="text-4xl mb-1">{card.value}</p>
+                  <p className="text-sm opacity-80">{card.description}</p>
                 </div>
               ))}
             </div>
@@ -142,7 +183,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     onClick={async () => {
                       setLoading(true);
                       try {
-                        const result = await api.initiateAttendance();
+                        const result = await initiateAttendanceInBackend();
                         toast.success(result.message);
                       } catch (error: any) {
                         toast.error(error.message);
@@ -159,10 +200,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       if (!confirm('Remove all deductions for resigned employees?')) return;
                       setLoading(true);
                       try {
-                        const result = await api.removeResignedDeductions();
+                        const result = await removeResignedDeductionsFromBackend();
                         toast.success(result.message);
                       } catch (error: any) {
-                        toast.error(error.message);
+                        toast.error(error.message || 'Failed to remove deductions');
                       } finally {
                         setLoading(false);
                       }
@@ -177,24 +218,32 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
                 <h3 className="text-gray-900 mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  System Stats
+                  Employees per Department
                 </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <span className="text-gray-600">Total Employees</span>
-                    <span className="text-gray-900">{employees.length}</span>
+                {employeesPerDept.length === 0 ? (
+                  <p className="text-gray-600">No department data available yet.</p>
+                ) : (
+                  <div className="max-h-64 overflow-y-auto rounded-xl border border-gray-100">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="text-left px-4 py-2 text-gray-600 font-medium">Department</th>
+                          <th className="text-right px-4 py-2 text-gray-600 font-medium">Employees</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeesPerDept.map((dept, idx) => (
+                          <tr key={dept.dept_name ?? idx} className="border-t border-gray-100 hover:bg-gray-50">
+                            <td className="px-4 py-2 text-gray-900">{dept.dept_name}</td>
+                            <td className="px-4 py-2 text-right text-gray-900 font-semibold">{dept.Number_of_Employees}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <span className="text-gray-600">Active Employees</span>
-                    <span className="text-green-600">{employees.filter(e => e.employment_status === 'active').length}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <span className="text-gray-600">On Leave</span>
-                    <span className="text-yellow-600">{employees.filter(e => e.employment_status === 'onleave').length}</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -202,7 +251,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
         {/* Employees Section */}
         {activeSection === 'employees' && (
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 -mx-4 sm:-mx-6 lg:-mx-8">
             <h3 className="text-gray-900 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -235,10 +284,16 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     <tr className="border-b-2 border-gray-200">
                       <th className="text-left py-3 px-4 text-gray-700">ID</th>
                       <th className="text-left py-3 px-4 text-gray-700">Name</th>
-                      <th className="text-left py-3 px-4 text-gray-700">Department</th>
-                      <th className="text-left py-3 px-4 text-gray-700">Status</th>
-                      <th className="text-left py-3 px-4 text-gray-700">Contract</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Gender</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Email</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Address</th>
                       <th className="text-left py-3 px-4 text-gray-700">Experience</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Day Off</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Contract</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Status</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Annual Balance</th>
+                      <th className="text-left py-3 px-4 text-gray-700">Accidental Balance</th>
+
                     </tr>
                   </thead>
                   <tbody>
@@ -246,7 +301,20 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <tr key={emp.employee_ID} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4 text-gray-900">{emp.employee_ID}</td>
                         <td className="py-3 px-4 text-gray-900">{emp.first_name} {emp.last_name}</td>
-                        <td className="py-3 px-4 text-gray-600">{emp.dept_name}</td>
+                        <td className="py-3 px-4 text-gray-600">
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs ${
+                            emp.gender?.toLowerCase() === 'f' ? 'bg-red-100 text-pink-700' :
+                            emp.gender?.toLowerCase() === 'm' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {emp.gender}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-600">{emp.email}</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.address}</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.years_of_experience}y</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.official_day_off}</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.type_of_contract}</td>
                         <td className="py-3 px-4">
                           <span className={`inline-flex px-3 py-1 rounded-full text-xs ${
                             emp.employment_status === 'active' ? 'bg-green-100 text-green-700' :
@@ -257,8 +325,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             {emp.employment_status}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{emp.type_of_contract}</td>
-                        <td className="py-3 px-4 text-gray-600">{emp.years_of_experience}y</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.annual_balance} days</td>
+                        <td className="py-3 px-4 text-gray-600">{emp.accidental_balance} days</td>
                       </tr>
                     ))}
                   </tbody>
@@ -273,14 +341,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>✏️</span>
                 Update Attendance
               </h3>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                  const result = await api.updateAttendance(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
+                  const result = await updateAttendanceFromBackend(parseInt(attendanceData.employee_ID), attendanceData.check_in_time, attendanceData.check_out_time);
                   toast.success(result.message);
                   setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
                 } catch (error: any) {
@@ -319,14 +386,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>📆</span>
                 Add Holiday
               </h3>
               <form onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
                 try {
-                  const result = await api.addHoliday(holidayData.name, holidayData.from_date, holidayData.to_date);
+                  const result = await addHolidayToBackend(holidayData.name, holidayData.from_date, holidayData.to_date);
                   toast.success(result.message);
                   setHolidayData({ name: '', from_date: '', to_date: '' });
                 } catch (error: any) {
@@ -420,15 +486,14 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>❌</span>
                 Rejected Medical Leaves
               </h3>
               <button
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const result = await api.getRejectedMedicals();
-                    setRejectedMedicals(result.data);
+                    const result = await fetchRejectedMedicalsFromBackend();
+                    setRejectedMedicals(Array.isArray(result) ? result : result?.data ?? []);
                     toast.success('Rejected medical leaves loaded');
                   } catch (error: any) {
                     toast.error(error.message);
@@ -446,10 +511,13 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     <div key={medical.request_ID} className="p-4 bg-red-50 border border-red-200 rounded-xl">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-gray-900">Request #{medical.request_ID} - Employee {medical.emp_ID}</p>
-                          <p className="text-gray-600 text-sm">{medical.start_date} to {medical.end_date} ({medical.num_days} days)</p>
+                          <p className="text-gray-900">Request #{medical.request_ID} - Employee {medical.Emp_ID}</p>
+                          <p className="text-gray-600 text-sm"> {medical.disability_details == null ? 'No disability details' : medical.disability_details}</p>
                         </div>
-                        <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs">Rejected</span>
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs">{medical.insurance_status ? 'Insured' : 'Not Insured'}</span>                        
+                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs">{medical.type}</span>                                               
+                      </div>
                       </div>
                     </div>
                   ))}
