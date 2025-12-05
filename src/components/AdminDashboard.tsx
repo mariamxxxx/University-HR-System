@@ -22,7 +22,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [employeesPerDept, setEmployeesPerDept] = useState<any[]>([]);
   const [rejectedMedicals, setRejectedMedicals] = useState<any[]>([]);
   const [yesterdayAttendance, setYesterdayAttendance] = useState<any[]>([]);
+  const [yesterdayLoaded, setYesterdayLoaded] = useState(false);
   const [winterPerformance, setWinterPerformance] = useState<any[]>([]);
+  const [winterLoaded, setWinterLoaded] = useState(false);
   const [allPayroll, setAllPayroll] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -477,42 +479,47 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     toast.error(error.message);
                   } finally {
                     setLoading(false);
+                    setYesterdayLoaded(true);
                   }
                 }}
                 className="w-full mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
               >
                 View Yesterday's Attendance
               </button>
-              {yesterdayAttendance.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b-2 border-gray-200">
-                        <th className="text-left py-3 px-4 text-gray-700">Employee ID</th>
-                        <th className="text-left py-3 px-4 text-gray-700">Check-in Time</th>
-                        <th className="text-left py-3 px-4 text-gray-700">Check-out Time</th>
-                        <th className="text-left py-3 px-4 text-gray-700">Duration</th>
-                        <th className="text-left py-3 px-4 text-gray-700">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {yesterdayAttendance.map((att, idx) => (
-                        <tr key={idx} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-gray-900">{att.emp_ID}</td>
-                          <td className="py-3 px-4 text-gray-600">{formatTime(att.check_in_time)}</td>
-                          <td className="py-3 px-4 text-gray-600">{formatTime(att.check_out_time)}</td>
-                          <td className="py-3 px-4 text-gray-600">{att.total_duration || 'N/A'} mins</td>
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex px-3 py-1 rounded-full text-xs ${att.status === 'attended' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                              {att.status}
-                            </span>
-                          </td>
+              {yesterdayLoaded ? (
+                yesterdayAttendance.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-gray-200">
+                          <th className="text-left py-3 px-4 text-gray-700">Employee ID</th>
+                          <th className="text-left py-3 px-4 text-gray-700">Check-in Time</th>
+                          <th className="text-left py-3 px-4 text-gray-700">Check-out Time</th>
+                          <th className="text-left py-3 px-4 text-gray-700">Duration</th>
+                          <th className="text-left py-3 px-4 text-gray-700">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody>
+                        {yesterdayAttendance.map((att, idx) => (
+                          <tr key={idx} className="border-b border-gray-100">
+                            <td className="py-3 px-4 text-gray-900">{att.emp_ID}</td>
+                            <td className="py-3 px-4 text-gray-600">{formatTime(att.check_in_time)}</td>
+                            <td className="py-3 px-4 text-gray-600">{formatTime(att.check_out_time)}</td>
+                            <td className="py-3 px-4 text-gray-600">{att.total_duration || 'N/A'} mins</td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex px-3 py-1 rounded-full text-xs ${att.status === 'attended' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {att.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-gray-600 text-center my-6">No attendance records to show</p>
+                )
+              ) : null}
             </div>
           </div>
         )}
@@ -678,40 +685,45 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   toast.error(error.message);
                 } finally {
                   setLoading(false);
+                  setWinterLoaded(true);
                 }
               }}
               className="mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
             >
               View Winter Performance
             </button>
-            {winterPerformance.length > 0 && (
-              <div className="space-y-4">
-                {winterPerformance.map((perf, idx) => (
-                  <div key={idx} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="inline-flex px-2 py-1 rounded-full text-xs bg-blue-100 text-gray-900">{perf['emp_ID']}</p>
-                        <p className="text-gray-900">{perf['Employee Name']}</p>
-                        <p className="text-gray-600 text-sm">{perf.semester} - {perf.comments}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <svg
-                            key={i}
-                            className={`w-6 h-6 ${i < perf.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                        <span className="ml-2 text-gray-700">{perf.rating}/5</span>
+            {winterLoaded ? (
+              winterPerformance.length > 0 ? (
+                <div className="space-y-4">
+                  {winterPerformance.map((perf, idx) => (
+                    <div key={idx} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="inline-flex px-2 py-1 rounded-full text-xs bg-blue-100 text-gray-900">{perf['emp_ID']}</p>
+                          <p className="text-gray-900">{perf['Employee Name']}</p>
+                          <p className="text-gray-600 text-sm">{perf.semester} - {perf.comments}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <svg
+                              key={i}
+                              className={`w-6 h-6 ${i < perf.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                          <span className="ml-2 text-gray-700">{perf.rating}/5</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-center my-6">No performance records to show</p>
+              )
+            ) : null}
           </div>
         )}
 
