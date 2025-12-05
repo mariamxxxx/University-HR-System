@@ -13,6 +13,9 @@ app.get("/", (req, res) => {
     res.send("Backend is running!");
 });
 
+
+//-------------------------------------------------- AISEL --------------------------------------------------------//
+
 // Employee Login endpoint
 app.post("/api/employee/login", async (req, res) => {
     const { employee_id, password } = req.body;
@@ -91,55 +94,7 @@ app.post("/api/employee/login", async (req, res) => {
     }
 });
 
-// Example: Call your stored procedure
-// app.post("/run-procedure", async (req, res) => {
-//     const { employee_ID, start_date, end_date } = req.body;
 
-//     try {
-//         const pool = await poolPromise;
-//         const result = await pool
-//             .request()
-//             .input("employee_ID", sql.Int, employee_ID)
-//             .input("start_date", sql.Date, start_date)
-//             .input("end_date", sql.Date, end_date)
-//             .execute("Submit_annual");  // <-- your procedure name
-
-//         res.json(result.recordset); // send results back to frontend
-//     } catch (err) {
-//         console.error("Error executing procedure:", err);
-//         res.status(500).json({ error: "Failed to execute procedure" });
-//     }
-// });
-
-//display all employee profiles
-app.get("/view-employees", async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool
-            .request()
-            .query(`
-                SELECT 
-                    employee_id as employee_ID, 
-                    first_name, 
-                    last_name, 
-                    gender, 
-                    email, 
-                    address,
-                    years_of_experience, 
-                    official_day_off,
-                    type_of_contract,
-                    employment_status,
-                    annual_balance, 
-                    accidental_balance,
-                    dept_name
-                FROM Employee
-            `);
-        res.json(result.recordset);
-    } catch (err) {
-        console.error("Error fetching employees:", err);
-        res.status(500).json({ error: "Failed to fetch employees" });
-    }
-});
 
 // Debug endpoint to check employee IDs and passwords
 app.get("/api/debug/employees", async (req, res) => {
@@ -203,41 +158,17 @@ app.get("/api/employee/performance/:employeeId/:semester", async (req, res) => {
 });
 
 // Get employee attendance for current month
+
+// Get employee attendance for current month
 app.get("/api/employee/attendance/:employeeId", async (req, res) => {
     const { employeeId } = req.params;
     
     console.log(`Fetching attendance for employee ${employeeId}`);
 
-// 2 display all employee profiles
-app.get("/view-employees", async (req, res) => {
     try {
         const pool = await poolPromise;
         const result = await pool
             .request()
-            .query("SELECT * FROM allEmployeeProfiles");
-        res.json(result.recordset);
-    } catch (err) {
-        console.error("Error fetching employees:", err);
-        res.status(500).json({ error: "Failed to fetch employees" });
-    }
-});
-
-// 3 display number of employees per department
-app.get("/view-dept", async (req, res) => {
-    try {
-        const pool = await poolPromise;
-        const result = await pool
-            .request()
-            .query("SELECT * FROM NoEmployeeDept");
-        const normalized = result.recordset.map((row) => ({
-            dept_name: row.dept_name ?? row.Department ?? row.department_name ?? row.department,
-            Number_of_Employees:
-                row.Number_of_Employees ?? row["Number of Employees"] ?? row.employee_count ?? row.count ?? 0
-        }));
-        res.json(normalized);
-    } catch (err) {
-        console.error("Error fetching departments:", err);
-        res.status(500).json({ error: "Failed to fetch departments" });
             .input("employee_ID", sql.Int, parseInt(employeeId))
             .query("SELECT * FROM dbo.MyAttendance(@employee_ID)");
 
@@ -373,7 +304,7 @@ app.get("/api/employee/payroll/:employeeId", async (req, res) => {
 });
 
 
-////////////////////////////////////////ROKAIA////////////////////////////////////////
+//-------------------------------------------------- ROKAIA --------------------------------------------------------//
 
 // Get roles for an employee and whether they are an approver (Dean/Vice Dean/President)
 app.get('/api/employee/roles/:employeeId', async (req, res) => { //get just gets the data with no modification 
@@ -815,9 +746,35 @@ app.get("/api/pending-approvals/:employeeId", async (req, res) => {
 
 
 
-//////////////////////////////////////////end ROKAIA////////////////////////////////////////
+//-------------------------------------------------- MARIAM --------------------------------------------------------//
 
+// 2 display all employee profiles
+app.get("/view-employees", async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool
+            .request()
+            .query("SELECT * FROM allEmployeeProfiles");
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Error fetching employees:", err);
+        res.status(500).json({ error: "Failed to fetch employees" });
+    }
+});
 
+// 3 display number of employees per department
+app.get("/view-dept", async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool
+            .request()
+            .query("SELECT * FROM NoEmployeeDept");
+        res.json(result.recordset);
+    } catch (err) {
+        console.error("Error fetching departments:", err);
+        res.status(500).json({ error: "Failed to fetch departments" });
+    }
+});
 
 // 4 display all rejected medical leaves
 app.get("/view-rejected-medicals", async (req, res) => {
