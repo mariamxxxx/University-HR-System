@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { api } from '../utils/api.tsx';
+import { setStoredEmployeeId } from "../utils/api.tsx";  // adjust path if needed
+
 
 interface HRLoginProps {
   onLogin: (employee: any) => void;
@@ -20,6 +22,7 @@ export function HRLogin({ onLogin, onBack }: HRLoginProps) {
       const result = await api.hrLogin(parseInt(employee_ID), password);
 
       if (result.success) {
+        setStoredEmployeeId(result.data.employee_id);
         onLogin(result.data);
       } else {
         toast.error(result.message || 'Login failed');

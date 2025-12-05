@@ -103,6 +103,95 @@ app.post("/hr-login", async (req, res) => {
 
 // Get pending leaves for HR approval - UPDATED
 
+// Add this endpoint AFTER the HR login endpoint but BEFORE the approval endpoints
+app.get("/pending-leaves", async (req, res) => {
+    try {
+        const pool = await poolPromise;
+
+        let hrEmployeeId = null;
+        if (req.query.hrId) hrEmployeeId = parseInt(req.query.hrId);
+        if (!hrEmployeeId) {
+            return res.status(400).json({
+                success: false,
+                message: "HR employee ID missing"
+            });
+        }
+
+        console.log("HR employee id detected:", hrEmployeeId);
+
+        const result = await pool.request()
+            .input("Emp1_ID", sql.Int, hrEmployeeId)
+            .query(`
+                    SELECT 
+                    l.request_ID,
+                    l.date_of_request,
+                    l.start_date,
+                    l.end_date,
+                    l.num_days,
+                    l.final_approval_status,
+
+                    -- Employee Name
+                    e.first_name + ' ' + e.last_name AS employee_name,
+
+                    -- THE REAL EMPLOYEE ID FROM THE CORRECT LEAVE TABLE
+                    COALESCE(
+                        al.emp_ID,
+                        acl.emp_ID,
+                        ml.Emp_ID,
+                        ul.Emp_ID,
+                        cl.emp_ID
+                    ) AS employee_ID,
+
+                    -- Leave type detection 
+                    LTRIM(RTRIM(
+                        CASE 
+                            WHEN al.request_ID IS NOT NULL THEN 'Annual'
+                            WHEN acl.request_ID IS NOT NULL THEN 'Accidental'
+                            WHEN ml.request_ID IS NOT NULL THEN 'Medical'
+                            WHEN ul.request_ID IS NOT NULL THEN 'Unpaid'
+                            WHEN cl.request_ID IS NOT NULL THEN 'Compensation'
+                            ELSE 'Unknown'
+                        END
+                    )) AS leave_type
+
+                FROM Leave l
+
+                -- Filter by HR approver
+                INNER JOIN Employee_Approve_Leave EAL
+                    ON EAL.Leave_ID = l.request_ID
+                    AND EAL.Emp1_ID = @Emp1_ID
+
+                -- LEFT JOIN leave type tables
+                LEFT JOIN Annual_Leave al ON l.request_ID = al.request_ID
+                LEFT JOIN Accidental_Leave acl ON l.request_ID = acl.request_ID
+                LEFT JOIN Medical_Leave ml ON l.request_ID = ml.request_ID
+                LEFT JOIN Unpaid_Leave ul ON l.request_ID = ul.request_ID
+                LEFT JOIN Compensation_Leave cl ON l.request_ID = cl.request_ID
+
+                -- JOIN employee using the extracted employee ID
+                LEFT JOIN Employee e ON e.employee_id = COALESCE(
+                        al.emp_ID,
+                        acl.emp_ID,
+                        ml.Emp_ID,
+                        ul.Emp_ID,
+                        cl.emp_ID
+                )
+
+                WHERE l.final_approval_status = 'Pending'
+                ORDER BY l.date_of_request DESC;
+
+            `);
+
+        return res.json({ success: true, data: result.recordset });
+
+    } catch (err) {
+        console.error("Error fetching pending leaves:", err);
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+});
+
+
+
 // 2. HR Approve/Reject Annual or Accidental Leave
 app.post("/approve-annual-accidental", async (req, res) => {
     const { request_ID, HR_ID, leave_type } = req.body;
@@ -180,77 +269,60 @@ app.post("/approve-compensation", async (req, res) => {
     }
 });
 
-// 5. Add Deduction for Missing Hours
-app.post("/api/hr/deduction-hours", async (req, res) => {
-    const { employee_ID } = req.body;
-    
-    if (!employee_ID) {
-        return res.status(400).json({ success: false, message: "Missing employee ID" });
-    }
-    
+// Deduct for missing hours
+app.post("/deduction-hours", async (req, res) => {
+    const { employee_id } = req.body;
+
     try {
         const pool = await poolPromise;
-        
-        // Call the stored procedure
-        await pool
-            .request()
-            .input("employee_ID", sql.Int, employee_ID)
-            .execute("Deduction_hours");
-            
-        res.json({ success: true, message: "Deduction for missing hours added successfully" });
+
+        await pool.request()
+            .input("employee_id", sql.Int, employee_id)
+            .execute("deduction_hours");
+
+        res.json({ success: true, message: "Deduction (missing hours) applied successfully" });
     } catch (err) {
-        console.error("Error adding hours deduction:", err);
-        res.status(500).json({ success: false, message: "Server error", error: err.message });
+        console.error("Error in deduction_hours:", err);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
-// 6. Add Deduction for Missing Days
-app.post("/api/hr/deduction-days", async (req, res) => {
-    const { employee_ID } = req.body;
-    
-    if (!employee_ID) {
-        return res.status(400).json({ success: false, message: "Missing employee ID" });
-    }
-    
+// Deduct for missing days
+app.post("/deduction-days", async (req, res) => {
+    const { employee_id } = req.body;
+
     try {
         const pool = await poolPromise;
-        
-        // Call the stored procedure
-        await pool
-            .request()
-            .input("employee_ID", sql.Int, employee_ID)
-            .execute("Deduction_days");
-            
-        res.json({ success: true, message: "Deduction for missing days added successfully" });
+
+        await pool.request()
+            .input("employee_id", sql.Int, employee_id)
+            .execute("deduction_days");
+
+        res.json({ success: true, message: "Deduction (missing days) applied successfully" });
     } catch (err) {
-        console.error("Error adding days deduction:", err);
-        res.status(500).json({ success: false, message: "Server error", error: err.message });
+        console.error("Error in deduction_days:", err);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
 
-// 7. Add Deduction for Unpaid Leave
-app.post("/api/hr/deduction-unpaid", async (req, res) => {
-    const { employee_ID } = req.body;
-    
-    if (!employee_ID) {
-        return res.status(400).json({ success: false, message: "Missing employee ID" });
-    }
-    
+// Deduct for unpaid cases
+app.post("/deduction-unpaid", async (req, res) => {
+    const { employee_id } = req.body;
+
     try {
         const pool = await poolPromise;
-        
-        // Call the stored procedure
-        await pool
-            .request()
-            .input("employee_ID", sql.Int, employee_ID)
-            .execute("Deduction_unpaid");
-            
-        res.json({ success: true, message: "Deduction for unpaid leave added successfully" });
+
+        await pool.request()
+            .input("employee_id", sql.Int, employee_id)
+            .execute("deduction_unpaid");
+
+        res.json({ success: true, message: "Deduction (unpaid) applied successfully" });
     } catch (err) {
-        console.error("Error adding unpaid deduction:", err);
-        res.status(500).json({ success: false, message: "Server error", error: err.message });
+        console.error("Error in deduction_unpaid:", err);
+        res.status(500).json({ success: false, message: err.message });
     }
 });
+
 
 // 8. Generate Payroll
 app.post("/api/hr/generate-payroll", async (req, res) => {

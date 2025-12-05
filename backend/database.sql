@@ -2543,6 +2543,8 @@ insert into Accidental_Leave (request_ID,emp_ID)
 values (6,1)
 insert into Accidental_Leave (request_ID,emp_ID) 
 values (8,3)
+insert into Accidental_Leave (request_ID,emp_ID) 
+values (7,1)
 
 select * from Accidental_Leave
 ------------------
@@ -2566,6 +2568,8 @@ insert into Unpaid_Leave (request_id,Emp_ID)
 values (15,2)
 insert into Unpaid_Leave (request_id,Emp_ID)
 values (16,8)
+insert into Unpaid_Leave (request_id,Emp_ID)
+values (9,1)
 
 select * from Unpaid_Leave
 -------------------
@@ -2663,11 +2667,11 @@ select * from Performance
 ------------------------------------------------
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (1,'10-01-2025',1333.33,'missing_days','finalized',null,7)
+values (1,'12-01-2025',1333.33,'missing_days','finalized',null,7)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (1,'10-28-2025',1333.33,'missing_days','pending',null,5)
+values (1,'12-28-2025',1333.33,'missing_days','pending',null,5)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
@@ -2789,4 +2793,8 @@ insert into Employee_Approve_Leave (Emp1_ID,leave_ID,status)
 values (5,20,'pending')
 ------------------------------------------------------
 
-select * from Employee_Approve_Leave where emp1_id=4;
+select * from Employee_Approve_Leave where emp1_id=5;
+
+select * from payroll where emp_ID=1;
+
+select * from deduction where emp_ID=1;
