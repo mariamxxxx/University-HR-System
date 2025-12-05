@@ -263,23 +263,23 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b rounded-m border-blue-800">
+      <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-indigo-500  rounded-xl flex items-center justify-center shadow-lg backdrop-blur-sm">
-                <svg className="w-6 h-6  text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-black text-xl font-semibold">{user.first_name} {user.last_name}</h1>
-                <p className="text-black text-sm">Employee ID: {user.employee_ID} • {user.dept_name}</p>
+                <h1 className="text-gray-900 text-xl">{user.first_name} {user.last_name}</h1>
+                <p className="text-gray-600 text-sm">Employee ID: {user.employee_ID} • {user.dept_name}</p>
               </div>
             </div>
             <button
               onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white hover:bg-red-600 rounded-xl transition-all shadow-md"
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -293,7 +293,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Pills */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2 mb-8">
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex flex-wrap gap-2">
             {sections.map((section) => (
               <button
                 key={section.id}
@@ -339,49 +339,86 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       <p className="text-base text-gray-500">Years of Experience:</p>
                       <p className="text-base text-gray-900 font-semibold">{user.years_of_experience || 'N/A'}</p>
                     </div>
+            <LeaveBalanceCard 
+              annual_balance={user.annual_balance} 
+              accidental_balance={user.accidental_balance} 
+            />
+
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg opacity-90">Status</h3>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    
                   </div>
                 </div>
+                <p className="text-4xl mb-1 capitalize">{user.employment_status}</p>
+                <p className="text-sm opacity-80">{user.type_of_contract}</p>
               </div>
 
-              {/* Right - Info Cards Stacked Vertically */}
-              <div className="flex-1 flex flex-col gap-4">
-                <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white shadow-xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base opacity-90">Department</h3>
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg opacity-90">Experience</h3>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
                   <p className={`text-xl ${user.dept_name ? 'font-bold' : ''}`}>{user.dept_name || 'Undefined'}</p>
                 </div>
+                <p className="text-4xl mb-1">{user.years_of_experience}</p>
+                <p className="text-sm opacity-80">years</p>
+              </div>
 
-                <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-4 text-white shadow-xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base opacity-90">Status</h3>
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg opacity-90">Department</h3>
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
                   </div>
-                  <p className="text-2xl capitalize">{user.employment_status}</p>
                 </div>
-
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base opacity-90">Experience</h3>
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </div>
-                  <p className="text-2xl">{user.years_of_experience} years</p>
-                </div>
+                <p className="text-2xl mb-1">{user.dept_name}</p>
+                <p className="text-sm opacity-80">department</p>
               </div>
             </div>
+
+            {payroll.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Last Month's Payroll
+                </h3>
+                {payroll.map((pay) => (
+                  <div key={pay.ID} className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
+                    <div className="grid md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <p className="text-gray-600 text-sm">Base + Bonus</p>
+                        <p className="text-green-700 text-lg">+${pay.bonus_amount?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Deductions</p>
+                        <p className="text-red-700 text-lg">-${pay.deductions_amount?.toFixed(2) || '0.00'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Period</p>
+                        <p className="text-gray-900 text-sm">{pay.from_date} to {pay.to_date}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-sm">Final Salary</p>
+                        <p className="text-indigo-700 text-2xl">${pay.final_salary_amount?.toFixed(2) || '0.00'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
           
           </div>
@@ -533,77 +570,77 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
         {activeSection === 'leaves' && (
           <div className="space-y-6">
             {!selectedLeaveType ? (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-gray-900 mb-4 text-center text-xl">Apply For a Leave</h3>
-                <div className="flex flex-wrap justify-center gap-3 max-w-5xl mx-auto">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                <h3 className="text-gray-900 mb-6 text-center text-2xl">Select Leave Type</h3>
+                <div className="flex flex-wrap justify-center gap-4 max-w-5xl mx-auto">
                   <button
                     onClick={() => setSelectedLeaveType('annual')}
-                    className="p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-56"
+                    className="p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-64"
                   >
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-green-200 transition-colors">
-                      <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <h4 className="text-gray-900 mb-1 font-semibold">Annual Leave</h4>
-                    <p className="text-xs text-gray-600">Planned vacation time</p>
-                    <p className="text-xs font-bold text-green-600 mt-1">{user.annual_balance} days available</p>
+                    <h4 className="text-gray-900 mb-2">Annual Leave</h4>
+                    <p className="text-sm text-gray-600">Planned vacation time</p>
+                    <p className="text-xs font-bold text-green-600 mt-2">{user.annual_balance} days available</p>
                   </button>
 
                   <button
                     onClick={() => setSelectedLeaveType('accidental')}
-                    className="p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-56"
+                    className="p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-64"
                   >
-                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-yellow-200 transition-colors">
-                      <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-yellow-200 transition-colors">
+                      <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
                     </div>
-                    <h4 className="text-gray-900 mb-1 font-semibold">Accidental Leave</h4>
-                    <p className="text-xs text-gray-600">Emergency leave (48hr window)</p>
-                    <p className="text-xs font-bold text-green-600 mt-1">{user.accidental_balance} days available</p>
+                    <h4 className="text-gray-900 mb-2">Accidental Leave</h4>
+                    <p className="text-sm text-gray-600">Emergency leave (48hr window)</p>
+                    <p className="text-xs font-bold text-green-600 mt-2">{user.accidental_balance} days available</p>
                   </button>
 
                   <button
                     onClick={() => setSelectedLeaveType('medical')}
-                    className="p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-56"
+                    className="p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-64"
                   >
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-red-200 transition-colors">
-                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-red-200 transition-colors">
+                      <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
                     </div>
-                    <h4 className="text-gray-900 mb-1 font-semibold">Medical Leave</h4>
-                    <p className="text-xs text-gray-600">Sick/Maternity leave</p>
-                    <p className="text-xs text-gray-500 mt-1">Requires documentation</p>
+                    <h4 className="text-gray-900 mb-2">Medical Leave</h4>
+                    <p className="text-sm text-gray-600">Sick/Maternity leave</p>
+                    <p className="text-xs text-gray-500 mt-2">Requires documentation</p>
                   </button>
 
                   <button
                     onClick={() => setSelectedLeaveType('unpaid')}
-                    className="p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-56"
+                    className="p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-64"
                   >
-                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-gray-200 transition-colors">
-                      <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-gray-200 transition-colors">
+                      <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
-                    <h4 className="text-gray-900 mb-1 font-semibold">Unpaid Leave</h4>
-                    <p className="text-xs text-gray-600">Leave without pay</p>
-                    <p className="text-xs text-gray-500 mt-1">Max 30 days/year</p>
+                    <h4 className="text-gray-900 mb-2">Unpaid Leave</h4>
+                    <p className="text-sm text-gray-600">Leave without pay</p>
+                    <p className="text-xs text-gray-500 mt-2">Max 30 days/year</p>
                   </button>
 
                   <button
                     onClick={() => setSelectedLeaveType('compensation')}
-                    className="p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-56"
+                    className="p-6 border-2 border-gray-200 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-center group w-64"
                   >
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-blue-200 transition-colors">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
+                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                       </svg>
                     </div>
-                    <h4 className="text-gray-900 mb-1 font-semibold">Compensation Leave</h4>
-                    <p className="text-xs text-gray-600">Day off for extra work</p>
-                    <p className="text-xs text-gray-500 mt-1">Requires approval</p>
+                    <h4 className="text-gray-900 mb-2">Compensation Leave</h4>
+                    <p className="text-sm text-gray-600">Day off for extra work</p>
+                    <p className="text-xs text-gray-500 mt-2">Requires approval</p>
                   </button>
                 </div>
               </div>
@@ -818,21 +855,17 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               ) : (
                 <div className="space-y-3">
                   {leaveStatus.map((leave) => (
-                    <div key={leave.request_ID} className={`p-4 rounded-xl border-2 ${
-                      leave.final_approval_status === 'Approved' || leave.final_approval_status === 'approved' ? 'bg-green-50 border-green-200' :
-                      leave.final_approval_status === 'Rejected' || leave.final_approval_status === 'rejected' ? 'bg-red-50 border-red-200' :
-                      'bg-yellow-50 border-yellow-200'
-                    }`}>
+                    <div key={leave.request_ID} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-gray-900 font-medium">Request ID: #{leave.request_ID}</p>
                           <p className="text-gray-600 text-sm mt-1">Submitted: {new Date(leave.date_of_request).toLocaleDateString()}</p>
                         </div>
                         <div>
-                          <span className={`font-bold ${
-                            leave.final_approval_status === 'Approved' || leave.final_approval_status === 'approved' ? 'text-green-600' :
-                            leave.final_approval_status === 'Rejected' || leave.final_approval_status === 'rejected' ? 'text-red-600' :
-                            'text-yellow-600'
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                            leave.final_approval_status === 'Approved' ? 'bg-green-100 text-green-700' :
+                            leave.final_approval_status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
                           }`}>
                             {leave.final_approval_status}
                           </span>
@@ -1026,7 +1059,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
             {performanceData.length === 0 ? (
               <p className="text-gray-600"></p>
             ) : (
-              <div className="space-y-4 max-w-4xl mx-auto">
+              <div className="space-y-4">
                 {performanceData.map((perf, idx) => (
                   <div key={perf.performance_ID || idx} className="p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
                     <div className="grid md:grid-cols-2 gap-4 mb-4">
@@ -1100,7 +1133,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
             ) : payroll.length === 0 ? (
               <p className="text-gray-600"></p>
             ) : (
-              <div className="space-y-4 max-w-4xl mx-auto">
+              <div className="space-y-4">
                 {payroll.map((pay) => (
                   <div key={pay.ID} className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-200">
                     <div className="grid md:grid-cols-2 gap-6">

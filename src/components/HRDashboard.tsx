@@ -57,7 +57,7 @@ if (!hrId) {
   setLoading(false);
   return;
 }
-const result = await api.getPendingLeaves(hrId);
+const result = await api.getPendingLeaves2(hrId);
 
 
       if (result.success) {
@@ -147,14 +147,14 @@ const result = await api.getPendingLeaves(hrId);
       if (leaveType === "annual" || leaveType === "accidental") {
         if (typedApi.hrApproveLeave) {
           result = await typedApi.hrApproveLeave(requestId, hrId, leaveType);
-        } else if (typedApi.approveAnnualLeave) {
+        } else if (typedApi.approveAnnualLeave2) {
           result = await typedApi.approveAnnualLeave(requestId, hrId, leaveType);
         } else {
           result = await typedApi.processLeave?.(requestId, hrId, leaveType);
         }
       } else if (leaveType === "unpaid") {
-        if (typedApi.approveUnpaidLeave) {
-          result = await typedApi.approveUnpaidLeave(requestId, hrId, leaveType);
+        if (typedApi.approveUnpaidLeave2) {
+          result = await typedApi.approveUnpaidLeave2(requestId, hrId, leaveType);
         } else if (typedApi.approveUnpaid) {
           result = await typedApi.approveUnpaid(requestId, hrId, leaveType);
         } else {

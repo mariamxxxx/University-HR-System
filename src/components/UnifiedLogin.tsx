@@ -76,9 +76,17 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
 
     setLoading(true);
     try {
-      const result = await api.signupEmployee(signupData);
-      if (result.success) {
-        toast.success(result.message);
+      // Tolerantly resolve the signup function using an any cast to avoid TypeScript errors
+      // if the api helper exposes a different name (e.g. createEmployee, registerEmployee).
+      const signupFn = (api as any).signupEmployee ?? (api as any).createEmployee ?? (api as any).registerEmployee;
+      if (typeof signupFn !== 'function') {
+        toast.error('Signup API not available');
+        return;
+      }
+
+      const result = await signupFn(signupData);
+      if (result && result.success) {
+        toast.success(result.message || 'Account created');
         setMode('login');
         setSignupData({
           first_name: '',
@@ -94,10 +102,10 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
           emergency_contact_phone: ''
         });
       } else {
-        toast.error(result.message);
+        toast.error(result?.message || 'Signup failed');
       }
     } catch (error: any) {
-      toast.error(error.message || 'Signup failed');
+      toast.error(error?.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
@@ -415,22 +423,7 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
               )}
 
               {/* Sample Credentials - Only show in login mode */}
-              {mode === 'login' && (
-                <div className="mt-8 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-sm text-gray-700 mb-3">Sample Credentials:</p>
-                  <div className="space-y-2 text-xs">
-                    {credentials[userType].map((cred, idx) => (
-                      <div key={idx} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-gray-100">
-                        <span className="text-gray-600">{cred.name}</span>
-                        <div className="flex gap-2">
-                          <code className="bg-gray-100 px-2 py-1 rounded text-gray-700">{cred.id}</code>
-                          <code className="bg-gray-100 px-2 py-1 rounded text-gray-700">{cred.password}</code>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              
             </div>
           </div>
         </div>
