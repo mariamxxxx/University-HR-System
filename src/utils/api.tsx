@@ -1142,7 +1142,7 @@ export const api = {
 
   generatePayroll: async (employee_ID: number, from_date: string, to_date: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/generate-payroll`, {
+      const response = await fetch(`${API_BASE_URL}/api/hr/generate-payroll`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ employee_ID, from_date, to_date }),
@@ -1305,6 +1305,32 @@ export const api = {
 
   // HR approve leave
   hrApproveLeave: async (requestId: number, hrId: number, leaveType: string) => {
+    const normalizedType = (leaveType || "").toLowerCase();
+    try {
+      let endpoint = "/approve-annual-accidental";
+      if (normalizedType === "unpaid") {
+        endpoint = "/approve-unpaid";
+      } else if (["compensation", "comp-off", "comp"].includes(normalizedType)) {
+        endpoint = "/approve-compensation";
+      }
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_ID: requestId, HR_ID: hrId, leave_type: normalizedType }),
+      });
+
+      const json = await safeJsonResponse(response);
+      if (!response.ok) {
+        return { success: false, message: json?.message || `HTTP ${response.status}` };
+      }
+
+      return json;
+    } catch (error: any) {
+      console.error("hrApproveLeave error:", error);
+    }
+
+    // fallback to mock data if backend is unavailable
     await new Promise(resolve => setTimeout(resolve, 500));
     const leave = mockData.leaves.find(l => l.request_ID === requestId);
     if (!leave) {
@@ -1316,22 +1342,20 @@ export const api = {
       return { success: false, message: 'Employee not found' };
     }
     
-    // Validate based on type
-    if (leaveType === 'Annual' || leaveType === 'Accidental') {
-      const balance = leaveType === 'Annual' ? employee.annual_balance : employee.accidental_balance;
+    const fallbackType = normalizedType;
+    if (fallbackType === 'annual' || fallbackType === 'accidental') {
+      const balance = fallbackType === 'annual' ? employee.annual_balance : employee.accidental_balance;
       if (balance < leave.num_days) {
         leave.final_approval_status = 'rejected';
         return { success: false, message: 'Insufficient leave balance. Leave rejected.' };
       }
     }
     
-    // Update approval status
     const approval = mockData.approvals.find(a => a.Emp1_ID === hrId && a.Leave_ID === requestId);
     if (approval) {
       approval.status = 'approved';
     }
     
-    // Check if all approvals are done
     const allApprovals = mockData.approvals.filter(a => a.Leave_ID === requestId);
     const allApproved = allApprovals.every(a => a.status === 'approved');
     const anyRejected = allApprovals.some(a => a.status === 'rejected');
@@ -1342,10 +1366,9 @@ export const api = {
     } else if (allApproved) {
       leave.final_approval_status = 'approved';
       
-      // Update balance
-      if (leaveType === 'Annual') {
+      if (fallbackType === 'annual') {
         employee.annual_balance -= leave.num_days;
-      } else if (leaveType === 'Accidental') {
+      } else if (fallbackType === 'accidental') {
         employee.accidental_balance -= leave.num_days;
       }
       
