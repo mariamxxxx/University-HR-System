@@ -313,6 +313,32 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
         {/* Overview Section */}
         {activeSection === 'overview' && (
           <div className="space-y-6">
+            <div className="flex gap-6">
+              {/* Left - Employee Info Box */}
+              <div className="w-full max-w-2xl flex-shrink-0">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                  <h3 className="text-gray-900 mb-6 text-2xl font-bold">{user.first_name} {user.last_name}</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-base text-gray-500">Employee ID:</p>
+                      <p className="text-base text-gray-900 font-semibold">{user.employee_ID}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-base text-gray-500">Department:</p>
+                      <p className={`text-base text-gray-900 ${user.dept_name ? 'font-bold' : 'font-semibold'}`}>{user.dept_name || 'Undefined'}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-base text-gray-500">Status:</p>
+                      <p className="text-base text-gray-900 font-semibold capitalize">{user.employment_status}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-base text-gray-500">Contract Type:</p>
+                      <p className="text-base text-gray-900 font-semibold capitalize">{user.type_of_contract}</p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-base text-gray-500">Years of Experience:</p>
+                      <p className="text-base text-gray-900 font-semibold">{user.years_of_experience || 'N/A'}</p>
+                    </div>
             <LeaveBalanceCard 
               annual_balance={user.annual_balance} 
               accidental_balance={user.accidental_balance} 
@@ -326,6 +352,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
+                    
                   </div>
                 </div>
                 <p className="text-4xl mb-1 capitalize">{user.employment_status}</p>
@@ -340,6 +367,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
+                  <p className={`text-xl ${user.dept_name ? 'font-bold' : ''}`}>{user.dept_name || 'Undefined'}</p>
                 </div>
                 <p className="text-4xl mb-1">{user.years_of_experience}</p>
                 <p className="text-sm opacity-80">years</p>
@@ -440,11 +468,23 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       </tr>
                     </thead>
                     <tbody>
-                      {attendance.map((att) => (
+                      {attendance.map((att) => {
+                        const formatTime = (timeString: string) => {
+                          if (!timeString) return 'N/A';
+                          const date = new Date(timeString);
+                          date.setHours(date.getHours() - 2); // Adjust for timezone offset
+                          return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                        };
+                        
+                        return (
                         <tr key={att.attendance_ID} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4 text-gray-900">{new Date(att.date).toLocaleDateString()}</td>
-                          <td className="py-3 px-4 text-gray-600">{att.check_in_time || 'N/A'}</td>
-                          <td className="py-3 px-4 text-gray-600">{att.check_out_time || 'N/A'}</td>
+                          <td className="py-3 px-4 text-gray-600">
+                            {formatTime(att.check_in_time)}
+                          </td>
+                          <td className="py-3 px-4 text-gray-600">
+                            {formatTime(att.check_out_time)}
+                          </td>
                           <td className="py-3 px-4 text-gray-600">{att.total_duration ? `${att.total_duration} mins` : 'N/A'}</td>
                           <td className="py-3 px-4">
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs ${
@@ -454,7 +494,8 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                             </span>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -497,7 +538,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       setLoading(false);
                     }
                   }}
-                  className="bg-blue-900 text-white px-6 py-3 rounded-xl hover:bg-blue-900 transition-colors"
+                  className="bg-indigo-500 text-white px-6 py-3 rounded-xl hover:bg-blue-900 transition-colors"
                 >
                   Load Deductions
                 </button>
@@ -1042,9 +1083,10 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                           {Array.from({ length: 5 }).map((_, i) => (
                             <svg
                               key={i}
-                              className={`w-6 h-6 ${i < perf.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                              className={`w-6 h-6 transition-all duration-300 hover:scale-125 ${i < perf.rating ? 'text-yellow-400 animate-pulse' : 'text-gray-300'}`}
                               fill="currentColor"
                               viewBox="0 0 20 20"
+                              style={{ animationDelay: `${i * 100}ms` }}
                             >
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
