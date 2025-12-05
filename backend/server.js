@@ -768,7 +768,7 @@ app.get("/view-dept", async (req, res) => {
         const pool = await poolPromise;
         const result = await pool
             .request()
-            .query("SELECT * FROM NoEmployeeDept");
+            .query("SELECT Department AS dept_name, [Number of Employees] AS Number_of_Employees FROM NoEmployeeDept");
         res.json(result.recordset);
     } catch (err) {
         console.error("Error fetching departments:", err);

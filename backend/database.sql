@@ -3,6 +3,7 @@ GO
 USE University_HR_ManagementSystem;
 GO
 
+select * from employee;
 
 go
 CREATE FUNCTION HRSalary_calculation
