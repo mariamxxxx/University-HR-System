@@ -21,7 +21,10 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   const [semester, setSemester] = useState('');
+  const [performanceError, setPerformanceError] = useState('');
   const [deductionMonth, setDeductionMonth] = useState('');
+  const [deductionsLoaded, setDeductionsLoaded] = useState(false);
+  const [leaveStatusLoaded, setLeaveStatusLoaded] = useState(false);
   
   // Leave application state
   const [selectedLeaveType, setSelectedLeaveType] = useState<string>('');
@@ -53,10 +56,26 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
 
   const checkUserRole = async () => {
     try {
+      // Prefer roles returned at login (faster, avoids extra network call)
+      const approverRoles = ['President', 'Vice Dean', 'Dean'];
+      if (user && Array.isArray(user.roles) && user.roles.length > 0) {
+        const roles = user.roles as string[];
+        // user.roles are expected ordered by rank ASC (highest privilege first)
+        const approverRole = roles.find(r => approverRoles.includes(r)) || null;
+        const approver = approverRole !== null;
+        setIsApprover(approver);
+        // Display the approver role (President/Vice Dean/Dean) if present, otherwise use the primary role
+        setUserRole(approverRole || roles[0] || null);
+        return;
+      }
+
       const result = await api.isEmployeeApprover(user.employee_ID);
       if (result.success) {
-        setIsApprover(result.data.isApprover);
-        setUserRole(result.data.role);
+        // result.data.role may be null or a primary role; prefer checking isApprover
+        const roles = result.data.roles || (result.data.role ? [result.data.role] : []);
+        const approverRole = roles.find((r: string) => approverRoles.includes(r)) || null;
+        setIsApprover(Boolean(result.data.isApprover) || approverRole !== null);
+        setUserRole(approverRole || result.data.role || null);
       }
     } catch (error) {
       console.error('Error checking role:', error);
@@ -76,13 +95,11 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
   const loadOverviewData = async () => {
     setLoading(true);
     try {
-      const [attResult, payResult, statusResult] = await Promise.all([
+      const [attResult, statusResult] = await Promise.all([
         api.getAttendance(user.employee_ID),
-        api.getLastMonthPayroll(user.employee_ID),
         api.getLeaveStatus(user.employee_ID)
       ]);
       setAttendance(attResult.data || []);
-      setPayroll(payResult.data || []);
       setLeaveStatus(statusResult.data || []);
     } catch (error: any) {
       toast.error(error.message || 'Failed to load data');
@@ -91,7 +108,29 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     }
   };
 
-  const handleAnnualLeaveSubmit = async (e: React.FormEvent) => {
+
+  // const handleAnnualLeaveSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   try {
+  //     const result = await api.submitAnnualLeave(
+  //       user.employee_ID, 
+  //       annualLeaveForm.start_date, 
+  //       annualLeaveForm.end_date, 
+  //       annualLeaveForm.replacement_emp ? parseInt(annualLeaveForm.replacement_emp) : null
+  //     );
+  //     toast.success(result.message);
+  //     setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
+  //     setSelectedLeaveType('');
+  //   } catch (error: any) {
+  //     toast.error(error.message);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  {/*AW*/}
+  const handleAnnualLeaveSubmit = async(e:React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -101,14 +140,20 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
         annualLeaveForm.end_date, 
         annualLeaveForm.replacement_emp ? parseInt(annualLeaveForm.replacement_emp) : null
       );
-      toast.success(result.message);
-      setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit annual leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
+
+
   };
 
   const handleAccidentalLeaveSubmit = async (e: React.FormEvent) => {
@@ -116,11 +161,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     setLoading(true);
     try {
       const result = await api.submitAccidentalLeave(user.employee_ID, accidentalLeaveForm.start_date, accidentalLeaveForm.end_date);
-      toast.success(result.message);
-      setAccidentalLeaveForm({ start_date: '', end_date: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setAccidentalLeaveForm({ start_date: '', end_date: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit accidental leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -131,11 +180,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     setLoading(true);
     try {
       const result = await api.submitMedicalLeave({ employee_ID: user.employee_ID, ...medicalLeaveForm });
-      toast.success(result.message);
-      setMedicalLeaveForm({ start_date: '', end_date: '', type: 'sick', insurance_status: 'yes', disability_details: '', document_description: '', file_name: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setMedicalLeaveForm({ start_date: '', end_date: '', type: 'sick', insurance_status: 'yes', disability_details: '', document_description: '', file_name: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit medical leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -146,11 +199,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     setLoading(true);
     try {
       const result = await api.submitUnpaidLeave({ employee_ID: user.employee_ID, ...unpaidLeaveForm });
-      toast.success(result.message);
-      setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit unpaid leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -165,11 +222,15 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
         ...compensationLeaveForm,
         replacement_emp: parseInt(compensationLeaveForm.replacement_emp)
       });
-      toast.success(result.message);
-      setCompensationLeaveForm({ compensation_date: '', reason: '', date_of_original_workday: '', replacement_emp: '' });
-      setSelectedLeaveType('');
+      if (result.success) {
+        toast.success(result.message);
+        setCompensationLeaveForm({ compensation_date: '', reason: '', date_of_original_workday: '', replacement_emp: '' });
+        setSelectedLeaveType('');
+      } else {
+        toast.error(result.message || 'Failed to submit compensation leave');
+      }
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -331,33 +392,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               </div>
             )}
 
-            {leaveStatus.length > 0 && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  Recent Leave Requests
-                </h3>
-                <div className="space-y-2">
-                  {leaveStatus.map((leave) => (
-                    <div key={leave.request_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
-                      <div>
-                        <p className="text-gray-900">Request #{leave.request_id}</p>
-                        <p className="text-gray-600 text-sm">Submitted: {leave.date_of_request}</p>
-                      </div>
-                      <span className={`px-4 py-2 rounded-full text-sm ${
-                        leave.status === 'approved' ? 'bg-green-100 text-green-700' :
-                        leave.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {leave.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          
           </div>
         )}
 
@@ -407,7 +442,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     <tbody>
                       {attendance.map((att) => (
                         <tr key={att.attendance_ID} className="border-b border-gray-100 hover:bg-gray-50">
-                          <td className="py-3 px-4 text-gray-900">{att.date}</td>
+                          <td className="py-3 px-4 text-gray-900">{new Date(att.date).toLocaleDateString()}</td>
                           <td className="py-3 px-4 text-gray-600">{att.check_in_time || 'N/A'}</td>
                           <td className="py-3 px-4 text-gray-600">{att.check_out_time || 'N/A'}</td>
                           <td className="py-3 px-4 text-gray-600">{att.total_duration ? `${att.total_duration} mins` : 'N/A'}</td>
@@ -450,9 +485,11 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       return;
                     }
                     setLoading(true);
+                    setDeductionsLoaded(false);
                     try {
                       const result = await api.getDeductions(user.employee_ID, parseInt(deductionMonth));
                       setDeductions(result.data || []);
+                      setDeductionsLoaded(true);
                       toast.success('Deductions loaded');
                     } catch (error: any) {
                       toast.error(error.message);
@@ -460,7 +497,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       setLoading(false);
                     }
                   }}
-                  className="bg-indigo-500 text-white px-6 py-3 rounded-xl hover:bg-indigo-600 transition-colors"
+                  className="bg-blue-900 text-white px-6 py-3 rounded-xl hover:bg-blue-900 transition-colors"
                 >
                   Load Deductions
                 </button>
@@ -479,7 +516,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </div>
                   ))}
                 </div>
-              ) : deductionMonth ? (
+              ) : deductionsLoaded ? (
                 <div className="text-center py-8">
                   <p className="text-gray-600">No absence deductions found for the given month</p>
                 </div>
@@ -506,7 +543,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </div>
                     <h4 className="text-gray-900 mb-2">Annual Leave</h4>
                     <p className="text-sm text-gray-600">Planned vacation time</p>
-                    <p className="text-xs text-gray-500 mt-2">{user.annual_balance} days available</p>
+                    <p className="text-xs font-bold text-green-600 mt-2">{user.annual_balance} days available</p>
                   </button>
 
                   <button
@@ -520,7 +557,7 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </div>
                     <h4 className="text-gray-900 mb-2">Accidental Leave</h4>
                     <p className="text-sm text-gray-600">Emergency leave (48hr window)</p>
-                    <p className="text-xs text-gray-500 mt-2">{user.accidental_balance} days available</p>
+                    <p className="text-xs font-bold text-green-600 mt-2">{user.accidental_balance} days available</p>
                   </button>
 
                   <button
@@ -568,18 +605,41 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-gray-900 text-xl">
-                    {selectedLeaveType.charAt(0).toUpperCase() + selectedLeaveType.slice(1)} Leave Application
-                  </h3>
+                <div className="flex items-center gap-4 mb-6">
                   <button
                     onClick={() => setSelectedLeaveType('')}
-                    className="text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-300 rounded-lg"
+                    className="bg-indigo-500 text-white hover:bg-indigo-600 p-2 rounded-lg"
                   >
-                    Back to Selection
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
                   </button>
+                  <h3 className="text-gray-900 text-2xl font-bold">
+                    {selectedLeaveType.charAt(0).toUpperCase() + selectedLeaveType.slice(1)} Leave Application
+                  </h3>
                 </div>
 
+                <div className="flex justify-center">
+                  <div className="w-full max-w-2xl">
+                
+
+                {selectedLeaveType === 'accidental' && (
+                  <form onSubmit={handleAccidentalLeaveSubmit} className="space-y-4 max-w-2xl">
+                    <div>
+                      <label className="block text-gray-700 mb-2">Start Date</label>
+                      <input type="date" value={accidentalLeaveForm.start_date} onChange={(e) => setAccidentalLeaveForm({ ...accidentalLeaveForm, start_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 mb-2">End Date</label>
+                      <input type="date" value={accidentalLeaveForm.end_date} onChange={(e) => setAccidentalLeaveForm({ ...accidentalLeaveForm, end_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                    </div>
+                    <p className="text-sm text-gray-600">Note: Must be requested within 48 hours of the leave date</p>
+                    <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-3 rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50">
+                      {loading ? 'Submitting...' : 'Submit Accidental Leave'}
+                    </button>
+                  </form>
+                )}
+{/* 
                 {selectedLeaveType === 'annual' && (
                   <form onSubmit={handleAnnualLeaveSubmit} className="space-y-4 max-w-2xl">
                     <div>
@@ -598,25 +658,28 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       {loading ? 'Submitting...' : 'Submit Annual Leave'}
                     </button>
                   </form>
-                )}
-
-                {selectedLeaveType === 'accidental' && (
-                  <form onSubmit={handleAccidentalLeaveSubmit} className="space-y-4 max-w-2xl">
+                )} */}
+                {/* AW */}
+                {selectedLeaveType==='annual' &&(
+                  <form onSubmit={ handleAnnualLeaveSubmit} className="space-y-4 max-w-2xl">
                     <div>
                       <label className="block text-gray-700 mb-2">Start Date</label>
-                      <input type="date" value={accidentalLeaveForm.start_date} onChange={(e) => setAccidentalLeaveForm({ ...accidentalLeaveForm, start_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                      <input type='date' value={annualLeaveForm.start_date} onChange={(e)=> setAnnualLeaveForm({...annualLeaveForm, start_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
                     </div>
                     <div>
                       <label className="block text-gray-700 mb-2">End Date</label>
-                      <input type="date" value={accidentalLeaveForm.end_date} onChange={(e) => setAccidentalLeaveForm({ ...accidentalLeaveForm, end_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                      <input type='date' value={annualLeaveForm.end_date} onChange={(e)=> setAnnualLeaveForm({...annualLeaveForm, end_date: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
                     </div>
-                    <p className="text-sm text-gray-600">Note: Must be requested within 48 hours of the leave date</p>
-                    <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-3 rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50">
-                      {loading ? 'Submitting...' : 'Submit Accidental Leave'}
-                    </button>
+                    <div>
+                      <label className="block text-gray-700 mb-2">Replacement Employee ID</label>
+                      <input type='number' placeholder="Enter replacement employee ID" value={annualLeaveForm.replacement_emp} onChange={(e)=> setAnnualLeaveForm({...annualLeaveForm, replacement_emp: e.target.value })} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
+                    </div>
+                    <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50"> {loading ? 'Submitting...' : 'Submit Annual Leave'}</button>
+
+
                   </form>
                 )}
-
+   
                 {selectedLeaveType === 'medical' && (
                   <form onSubmit={handleMedicalLeaveSubmit} className="space-y-4 max-w-2xl">
                     <div>
@@ -714,6 +777,63 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     </button>
                   </form>
                 )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!selectedLeaveType && (
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mt-6">
+              <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                My Leave Status (Current Month)
+              </h3>
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  setLeaveStatusLoaded(false);
+                  try {
+                    const result = await api.getLeaveStatus(user.employee_ID);
+                    setLeaveStatus(result.data || []);
+                    setLeaveStatusLoaded(true);
+                    toast.success('Leave status loaded');
+                  } catch (error: any) {
+                    toast.error(error.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
+              >
+                Load Leave Status
+              </button>
+              {leaveStatusLoaded && (leaveStatus.length === 0 ? (
+                <p className="text-gray-600">No leave requests found for this month.</p>
+              ) : (
+                <div className="space-y-3">
+                  {leaveStatus.map((leave) => (
+                    <div key={leave.request_ID} className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-900 font-medium">Request ID: #{leave.request_ID}</p>
+                          <p className="text-gray-600 text-sm mt-1">Submitted: {new Date(leave.date_of_request).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${
+                            leave.final_approval_status === 'Approved' ? 'bg-green-100 text-green-700' :
+                            leave.final_approval_status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {leave.final_approval_status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
               </div>
             )}
           </div>
@@ -728,7 +848,6 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               </svg>
               Pending Approvals
             </h3>
-            <p className="text-gray-600 text-sm mb-4">As a {userRole}, approve or reject leave requests</p>
             
             {/* Filters and Sort */}
             <div className="flex gap-4 mb-6">
@@ -870,17 +989,16 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                     return;
                   }
                   setLoading(true);
+                  setPerformanceError('');
                   try {
                     const result = await api.getPerformance(user.employee_ID, semester);
                     console.log('Performance result:', result);
                     setPerformanceData(result.data || []);
-                    if (result.data && result.data.length > 0) {
-                      toast.success(`Found ${result.data.length} performance record(s)`);
-                    } else {
-                      toast.info('No performance records found for this semester');
+                    if (result.data && result.data.length === 0) {
+                      setPerformanceError('No performance found for the given semester');
                     }
                   } catch (error: any) {
-                    toast.error(error.message);
+                    setPerformanceError(error.message);
                   } finally {
                     setLoading(false);
                   }
@@ -890,6 +1008,9 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                 Load Performance
               </button>
             </div>
+            {performanceError && (
+              <p className="text-red-600 text-sm mb-4">{performanceError}</p>
+            )}
             {performanceData.length === 0 ? (
               <p className="text-gray-600"></p>
             ) : (
@@ -959,12 +1080,12 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               }}
               className="mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
             >
-              Load Payroll
+              Load Last Month's Payroll
             </button>
             {loading ? (
               <p className="text-gray-600">Loading...</p>
             ) : payroll.length === 0 ? (
-              <p className="text-gray-600">No payroll records found. Click "Load Payroll" to view.</p>
+              <p className="text-gray-600"></p>
             ) : (
               <div className="space-y-4">
                 {payroll.map((pay) => (
@@ -976,11 +1097,11 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                       </div>
                       <div>
                         <p className="text-gray-600 text-sm mb-1">Payment Date</p>
-                        <p className="text-gray-900 text-lg">{pay.payment_date}</p>
+                        <p className="text-gray-900 text-lg">{new Date(pay.payment_date).toLocaleDateString()}</p>
                       </div>
                       <div>
                         <p className="text-gray-600 text-sm mb-1">Pay Period</p>
-                        <p className="text-gray-900">{pay.from_date} to {pay.to_date}</p>
+                        <p className="text-gray-900">{new Date(pay.from_date).toLocaleDateString()} to {new Date(pay.to_date).toLocaleDateString()}</p>
                       </div>
                       <div>
                         <p className="text-gray-600 text-sm mb-1">Bonus Amount</p>
@@ -1015,15 +1136,18 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Evaluate Employee (Dean Only - Same Department)
+              Evaluate Employee 
             </h3>
             <p className="text-gray-600 text-sm mb-4">As a Dean, you can only evaluate employees within your department: {user.dept_name}</p>
             <form onSubmit={async (e) => {
               e.preventDefault();
               setLoading(true);
               try {
+                console.log('Submitting evaluation:', evaluationForm);
+                
                 // Check if employee exists and is in same department
                 const employeesResult = await api.getEmployees();
+                console.log('Employees result:', employeesResult);
                 const targetEmployee = employeesResult.data.find((emp: any) => emp.employee_ID === parseInt(evaluationForm.employee_ID));
                 
                 if (!targetEmployee) {
@@ -1038,11 +1162,21 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                   return;
                 }
                 
-                const result = await api.submitEvaluation({ evaluator_ID: user.employee_ID, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) });
+                const submitData = { evaluator_ID: user.employee_ID, ...evaluationForm, employee_ID: parseInt(evaluationForm.employee_ID), rating: parseInt(evaluationForm.rating) };
+                console.log('Submitting to API:', submitData);
+                const result = await api.submitEvaluation(submitData);
+                console.log('API result:', result);
+                
+                if (!result.success) {
+                  toast.error(result.message || 'Failed to submit evaluation');
+                  setLoading(false);
+                  return;
+                }
                 toast.success(result.message);
                 setEvaluationForm({ employee_ID: '', rating: '5', comments: '', semester: '' });
               } catch (error: any) {
-                toast.error(error.message);
+                console.error('Evaluation form error:', error);
+                toast.error(error.message || 'An error occurred');
               } finally {
                 setLoading(false);
               }
