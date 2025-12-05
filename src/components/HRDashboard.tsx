@@ -1,57 +1,276 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import { api } from '../utils/api.tsx';
+import React, { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { api } from "../utils/api.tsx";
+
+interface Employee {
+  employee_id?: number;
+  employee_ID?: number;
+  first_name?: string;
+  last_name?: string;
+  dept_name?: string;
+  [key: string]: any;
+}
 
 interface HRDashboardProps {
-  user: any;
+  user: Employee;
   onLogout: () => void;
 }
 
 export function HRDashboard({ user, onLogout }: HRDashboardProps) {
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeSection, setActiveSection] = useState<"overview" | "leaves" | "deductions" | "payroll">("overview");
   const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [employeeIdForDeduction, setEmployeeIdForDeduction] = useState('');
-  const [payrollForm, setPayrollForm] = useState({ employee_ID: '', from_date: '', to_date: '' });
+
+  // Deduction input
+  const [employeeIdForDeduction, setEmployeeIdForDeduction] = useState<string>("");
+
+  // Payroll form
+  const [payrollForm, setPayrollForm] = useState({ employee_ID: "", from_date: "", to_date: "" });
 
   const sections = [
-    { id: 'overview', name: 'Overview', icon: null },
-    { id: 'leaves', name: 'Leave Approvals', icon: null },
-    { id: 'deductions', name: 'Deductions', icon: null },
-    { id: 'payroll', name: 'Payroll', icon: null }
+    { id: "overview", name: "Overview", icon: null },
+    { id: "leaves", name: "Leave Approvals", icon: null },
+    { id: "deductions", name: "Deductions", icon: null },
+    { id: "payroll", name: "Payroll", icon: null },
   ];
 
   useEffect(() => {
-    if (activeSection === 'overview' || activeSection === 'leaves') {
+    if (activeSection === "overview" || activeSection === "leaves") {
       loadPendingLeaves();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection]);
+
+  const getCurrentHrId = (): number | null => {
+    // `user` prop may contain employee_id or employee_ID — prefer employee_id
+    const id = user?.employee_id ?? user?.employee_ID ?? null;
+    return typeof id === "number" ? id : id ? parseInt(id as any, 10) : null;
+  };
 
   const loadPendingLeaves = async () => {
     setLoading(true);
     try {
-      const result = await api.getPendingLeaves();
-      setPendingLeaves(result.data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load data');
+      console.log("Loading pending leaves...");
+      const hrId = getCurrentHrId();
+if (!hrId) {
+  toast.error("HR ID missing");
+  setLoading(false);
+  return;
+}
+const result = await api.getPendingLeaves(hrId);
+
+
+      if (result.success) {
+        console.log("Leaves loaded (raw):", result.data);
+
+        // Normalize records so UI expects consistent field names
+        const normalized = (result.data || []).map((r: any) => {
+          return {
+            request_ID: r.request_ID ?? r.id ?? r.requestId,
+            date_of_request: r.date_of_request ?? r.date ?? r.dateOfRequest,
+            start_date: r.start_date ?? r.startDate,
+            end_date: r.end_date ?? r.endDate,
+            num_days: r.num_days ?? r.days ?? r.numDays,
+            final_approval_status: r.final_approval_status ?? r.status,
+            // canonical leaveType: prefer server leave_type but normalize capitalization
+            leaveType: (r.leave_type ?? r.leaveType ?? r.type ?? "").toString(),
+            // employee display fields
+            employee: r.employee_name ?? r.employee ?? `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim(),
+            employee_ID: r.employee_id ?? r.employee_ID ?? r.employeeId,
+            // keep original raw object as backup
+            _raw: r,
+          };
+        });
+
+        console.log("Normalized leaves:", normalized.map((l: any) => ({ id: l.request_ID, leaveType: l.leaveType })));
+        setPendingLeaves(normalized);
+      } else {
+        console.error("Failed to load leaves:", result.message);
+        toast.error(result.message || "Failed to load pending leaves");
+        setPendingLeaves([]);
+      }
+    } catch (error) {
+      console.error("Error loading pending leaves:", error);
+      toast.error("An error occurred while loading pending leaves");
+      setPendingLeaves([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (requestId: number, leaveType: string) => {
+  // Generic process (keeps compatibility with existing api)
+  const handleProcess = async (requestId: number, leaveType: string) => {
     setLoading(true);
     try {
-      const result = await api.hrApproveLeave(requestId, user.employee_ID, leaveType);
-      toast.success(result.message);
-      loadPendingLeaves();
-    } catch (error: any) {
-      toast.error(error.message);
+      console.log(`Processing leave #${requestId} (${leaveType})`);
+      const hrId = getCurrentHrId();
+      if (!hrId) {
+        toast.error("Current HR id not available");
+        return;
+      }
+
+      const result = await api.processLeave(requestId, hrId, leaveType);
+
+      if (result.success) {
+        toast.success(result.message || `Leave #${requestId} processed successfully`);
+        loadPendingLeaves();
+      } else {
+        toast.error(result.message || "Failed to process leave");
+      }
+    } catch (err) {
+      console.error("Error processing:", err);
+      toast.error("Server error while processing leave");
     } finally {
       setLoading(false);
     }
   };
 
+  // Smart auto-processor that selects specific endpoints if available
+  const handleAutoProcess = async (leave: any) => {
+    const requestId = leave.request_ID ?? leave.id;
+    const rawType = (leave.leave_type ?? leave.leaveType ?? leave.type ?? "").toString();
+    const leaveType = rawType.toLowerCase();
+
+    setLoading(true);
+    try {
+      console.log(`Auto-processing leave #${requestId} (${leaveType})`);
+      const typedApi = api as any;
+      const hrId = getCurrentHrId();
+
+      if (!hrId) {
+        toast.error("Current HR id not available");
+        return;
+      }
+
+      let result: any = null;
+
+      if (leaveType === "annual" || leaveType === "accidental") {
+        if (typedApi.hrApproveLeave) {
+          result = await typedApi.hrApproveLeave(requestId, hrId, leaveType);
+        } else if (typedApi.approveAnnualLeave) {
+          result = await typedApi.approveAnnualLeave(requestId, hrId, leaveType);
+        } else {
+          result = await typedApi.processLeave?.(requestId, hrId, leaveType);
+        }
+      } else if (leaveType === "unpaid") {
+        if (typedApi.approveUnpaidLeave) {
+          result = await typedApi.approveUnpaidLeave(requestId, hrId, leaveType);
+        } else if (typedApi.approveUnpaid) {
+          result = await typedApi.approveUnpaid(requestId, hrId, leaveType);
+        } else {
+          result = await typedApi.processLeave?.(requestId, hrId, leaveType);
+        }
+      } else if (leaveType === "compensation" || leaveType === "comp-off" || leaveType === "comp") {
+        if (typedApi.approveCompensationLeave) {
+          result = await typedApi.approveCompensationLeave(requestId, hrId, leaveType);
+        } else if (typedApi.approveCompensation) {
+          result = await typedApi.approveCompensation(requestId, hrId, leaveType);
+        } else {
+          result = await typedApi.processLeave?.(requestId, hrId, leaveType);
+        }
+      } else {
+        // fallback to generic processor
+        result = await typedApi.processLeave?.(requestId, hrId, leaveType);
+      }
+
+      if (result && result.success) {
+        toast.success(result.message || `Leave #${requestId} processed successfully`);
+        loadPendingLeaves();
+      } else {
+        toast.error(result?.message || "Failed to process leave");
+      }
+    } catch (err: any) {
+      console.error("Error auto-processing:", err);
+      toast.error(err?.message || "Server error while processing leave");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Deduction handlers (use the state employeeIdForDeduction) ---
+  const handleHoursDeduction = async () => {
+    const empId = parseInt(employeeIdForDeduction, 10);
+    if (!empId || isNaN(empId)) {
+      toast.error("Please enter a valid Employee ID");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.deductHours(empId);
+      if (result.success) toast.success(result.message || "Hours deduction applied");
+      else toast.error(result.message || "Failed to apply hours deduction");
+    } catch (err: any) {
+      console.error("deductHours error:", err);
+      toast.error(err?.message || "Server error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDaysDeduction = async () => {
+    const empId = parseInt(employeeIdForDeduction, 10);
+    if (!empId || isNaN(empId)) {
+      toast.error("Please enter a valid Employee ID");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.deductDays(empId);
+      if (result.success) toast.success(result.message || "Days deduction applied");
+      else toast.error(result.message || "Failed to apply days deduction");
+    } catch (err: any) {
+      console.error("deductDays error:", err);
+      toast.error(err?.message || "Server error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnpaidDeduction = async () => {
+    const empId = parseInt(employeeIdForDeduction, 10);
+    if (!empId || isNaN(empId)) {
+      toast.error("Please enter a valid Employee ID");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.deductUnpaid(empId);
+      if (result.success) toast.success(result.message || "Unpaid deduction applied");
+      else toast.error(result.message || "Failed to apply unpaid deduction");
+    } catch (err: any) {
+      console.error("deductUnpaid error:", err);
+      toast.error(err?.message || "Server error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Payroll generator handler
+  const handleGeneratePayroll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const empId = parseInt(payrollForm.employee_ID, 10);
+    if (!empId || isNaN(empId)) {
+      toast.error("Please enter a valid Employee ID");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api.generatePayroll(empId, payrollForm.from_date, payrollForm.to_date);
+      if (result.success) {
+        toast.success(result.message || "Payroll generated");
+        setPayrollForm({ employee_ID: "", from_date: "", to_date: "" });
+      } else {
+        toast.error(result.message || "Failed to generate payroll");
+      }
+    } catch (err: any) {
+      console.error("generatePayroll error:", err);
+      toast.error(err?.message || "Server error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // UI rendering
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -66,7 +285,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
               </div>
               <div>
                 <h1 className="text-gray-900 text-xl">HR Portal</h1>
-                <p className="text-gray-600 text-sm">{user.first_name} {user.last_name} • {user.dept_name}</p>
+                <p className="text-gray-600 text-sm">
+                  {user.first_name} {user.last_name} • {user.dept_name}
+                </p>
               </div>
             </div>
             <button
@@ -89,11 +310,9 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
             {sections.map((section) => (
               <button
                 key={section.id}
-                onClick={() => setActiveSection(section.id)}
+                onClick={() => setActiveSection(section.id as any)}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all ${
-                  activeSection === section.id
-                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  activeSection === section.id ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg" : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
                 <span>{section.icon}</span>
@@ -104,7 +323,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
         </div>
 
         {/* Overview Section */}
-        {activeSection === 'overview' && (
+        {activeSection === "overview" && (
           <div className="space-y-6">
             <div className="grid md:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-6 text-white shadow-xl">
@@ -129,7 +348,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                     </svg>
                   </div>
                 </div>
-                <p className="text-4xl mb-1">{pendingLeaves.filter(l => l.leaveType === 'Annual').length}</p>
+                <p className="text-4xl mb-1">{pendingLeaves.filter((l) => (l.leaveType || "").toLowerCase() === "annual").length}</p>
                 <p className="text-sm opacity-80">pending</p>
               </div>
 
@@ -142,7 +361,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                     </svg>
                   </div>
                 </div>
-                <p className="text-4xl mb-1">{pendingLeaves.filter(l => l.leaveType !== 'Annual').length}</p>
+                <p className="text-4xl mb-1">{pendingLeaves.filter((l) => (l.leaveType || "").toLowerCase() !== "annual").length}</p>
                 <p className="text-sm opacity-80">pending</p>
               </div>
             </div>
@@ -156,14 +375,14 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
               </h3>
               <div className="grid md:grid-cols-2 gap-4">
                 <button
-                  onClick={() => setActiveSection('leaves')}
+                  onClick={() => setActiveSection("leaves")}
                   className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-4 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all text-left"
                 >
                   <p className="text-sm opacity-90 mb-1">Review</p>
                   <p className="text-lg">Leave Requests</p>
                 </button>
                 <button
-                  onClick={() => setActiveSection('payroll')}
+                  onClick={() => setActiveSection("payroll")}
                   className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl hover:from-green-600 hover:to-green-700 transition-all text-left"
                 >
                   <p className="text-sm opacity-90 mb-1">Generate</p>
@@ -175,7 +394,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
         )}
 
         {/* Leave Approvals Section */}
-        {activeSection === 'leaves' && (
+        {activeSection === "leaves" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-gray-900 flex items-center gap-2">
@@ -184,10 +403,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                 </svg>
                 Pending Leave Requests
               </h3>
-              <button
-                onClick={loadPendingLeaves}
-                className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors"
-              >
+              <button onClick={loadPendingLeaves} className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors">
                 Refresh
               </button>
             </div>
@@ -210,26 +426,36 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <span className={`inline-flex px-3 py-1 rounded-full text-sm ${
-                            leave.leaveType === 'Annual' ? 'bg-blue-100 text-blue-700' :
-                            leave.leaveType === 'Accidental' ? 'bg-yellow-100 text-yellow-700' :
-                            leave.leaveType === 'Medical' ? 'bg-red-100 text-red-700' :
-                            leave.leaveType === 'Unpaid' ? 'bg-gray-100 text-gray-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
-                            {leave.leaveType} Leave
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-sm ${
+                              (leave.leaveType || "").toLowerCase() === "annual"
+                                ? "bg-blue-100 text-blue-700"
+                                : (leave.leaveType || "").toLowerCase() === "accidental"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : (leave.leaveType || "").toLowerCase() === "medical"
+                                ? "bg-red-100 text-red-700"
+                                : (leave.leaveType || "").toLowerCase() === "unpaid"
+                                ? "bg-gray-100 text-gray-700"
+                                : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {(leave.leaveType || "Unknown").toString()} Leave
                           </span>
                           <span className="text-gray-600">Request #{leave.request_ID}</span>
                         </div>
-                        <p className="text-gray-900 mb-2">Employee: {leave.employee} (ID: {leave.employee_ID})</p>
+                        <p className="text-gray-900 mb-2">
+                          Employee: {leave.employee} (ID: {leave.employee_ID})
+                        </p>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>{leave.start_date} → {leave.end_date}</span>
+                          <span>
+                            {leave.start_date} → {leave.end_date}
+                          </span>
                           <span>{leave.num_days} days</span>
                           <span>Submitted: {leave.date_of_request}</span>
                         </div>
                       </div>
                       <button
-                        onClick={() => handleApprove(leave.request_ID, leave.leaveType)}
+                        onClick={() => handleAutoProcess(leave)}
                         disabled={loading}
                         className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all disabled:opacity-50"
                       >
@@ -244,7 +470,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
         )}
 
         {/* Deductions Section */}
-        {activeSection === 'deductions' && (
+        {activeSection === "deductions" && (
           <div className="space-y-6">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <h3 className="text-gray-900 mb-4 flex items-center gap-2">
@@ -274,21 +500,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                   </h4>
                   <p className="text-gray-600 text-sm mb-4">Deduct for attendance with less than 8 hours</p>
                   <button
-                    onClick={async () => {
-                      if (!employeeIdForDeduction) {
-                        toast.error('Please enter employee ID');
-                        return;
-                      }
-                      setLoading(true);
-                      try {
-                        const result = await api.addDeductionHours(parseInt(employeeIdForDeduction));
-                        toast.success(result.message);
-                      } catch (error: any) {
-                        toast.error(error.message);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
+                    onClick={handleHoursDeduction}
                     disabled={loading || !employeeIdForDeduction}
                     className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all disabled:opacity-50"
                   >
@@ -305,21 +517,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                   </h4>
                   <p className="text-gray-600 text-sm mb-4">Deduct for absent days in current month</p>
                   <button
-                    onClick={async () => {
-                      if (!employeeIdForDeduction) {
-                        toast.error('Please enter employee ID');
-                        return;
-                      }
-                      setLoading(true);
-                      try {
-                        const result = await api.addDeductionDays(parseInt(employeeIdForDeduction));
-                        toast.success(result.message);
-                      } catch (error: any) {
-                        toast.error(error.message);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
+                    onClick={handleDaysDeduction}
                     disabled={loading || !employeeIdForDeduction}
                     className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all disabled:opacity-50"
                   >
@@ -336,21 +534,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                   </h4>
                   <p className="text-gray-600 text-sm mb-4">Deduct for approved unpaid leave days</p>
                   <button
-                    onClick={async () => {
-                      if (!employeeIdForDeduction) {
-                        toast.error('Please enter employee ID');
-                        return;
-                      }
-                      setLoading(true);
-                      try {
-                        const result = await api.addDeductionUnpaid(parseInt(employeeIdForDeduction));
-                        toast.success(result.message);
-                      } catch (error: any) {
-                        toast.error(error.message);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
+                    onClick={handleUnpaidDeduction}
                     disabled={loading || !employeeIdForDeduction}
                     className="w-full bg-gradient-to-r from-gray-500 to-gray-600 text-white px-4 py-2 rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all disabled:opacity-50"
                   >
@@ -363,7 +547,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
         )}
 
         {/* Payroll Section */}
-        {activeSection === 'payroll' && (
+        {activeSection === "payroll" && (
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <h3 className="text-gray-900 mb-4 flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -372,19 +556,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
               Generate Monthly Payroll
             </h3>
             <p className="text-gray-600 mb-6">Calculate final salary including base salary, bonuses, and deductions</p>
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              setLoading(true);
-              try {
-                const result = await api.generatePayroll(parseInt(payrollForm.employee_ID), payrollForm.from_date, payrollForm.to_date);
-                toast.success(result.message);
-                setPayrollForm({ employee_ID: '', from_date: '', to_date: '' });
-              } catch (error: any) {
-                toast.error(error.message);
-              } finally {
-                setLoading(false);
-              }
-            }} className="space-y-4 max-w-2xl">
+            <form onSubmit={handleGeneratePayroll} className="space-y-4 max-w-2xl">
               <div>
                 <label className="block text-gray-700 mb-2">Employee ID</label>
                 <input
@@ -422,7 +594,7 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-4 rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all disabled:opacity-50 text-lg"
               >
-                {loading ? 'Generating...' : 'Generate Payroll'}
+                {loading ? "Generating..." : "Generate Payroll"}
               </button>
             </form>
           </div>

@@ -1,8 +1,10 @@
-create DATABASE University_HR_ManagementSystem2;
-GO
-USE University_HR_ManagementSystem2;
-GO
+-- create DATABASE University_HR_ManagementSystem;
+-- GO
+-- USE University_HR_ManagementSystem;
+-- GO
 
+
+go
 CREATE FUNCTION HRSalary_calculation
 (@employee_ID int) 
 Returns decimal(10,2)
@@ -365,13 +367,10 @@ GO
 -- c)
 CREATE VIEW allPerformance
 AS
-SELECT P.*
-FROM Performance P
-INNER JOIN Employee E
-ON p.emp_id = E.employee_ID
-WHERE P.SEMESTER LIKE 'W%';
+  SELECT (E.first_name+' ' +E.last_name) AS 'Employee Name' , P.*
+    FROM PERFORMANCE P , EMPLOYEE E
+    WHERE P.emp_ID=E.employee_ID AND semester LIKE 'W%';
 GO
-
 
 -- d) 
 CREATE VIEW allRejectedMedicals
@@ -755,6 +754,7 @@ declare @start_date_acc date
 declare  @end_date_acc date
 declare @date_of_request date
 --declare @difference_between_date_start_date int
+
 ----------------------- Annual Leave -------------------------------------------
 --- check if the balance is greater than 0 and the leave is annual leave -------
 if exists(select 1 from Annual_Leave where request_ID = @request_ID)
@@ -2557,7 +2557,7 @@ values (6,1)
 insert into Accidental_Leave (request_ID,emp_ID) 
 values (8,3)
 insert into Accidental_Leave (request_ID,emp_ID) 
-values (22,1)
+values (7,1)
 
 insert into Accidental_Leave (request_ID,emp_ID) 
 values (24,1)
@@ -2583,6 +2583,8 @@ insert into Unpaid_Leave (request_id,Emp_ID)
 values (15,2)
 insert into Unpaid_Leave (request_id,Emp_ID)
 values (16,8)
+insert into Unpaid_Leave (request_id,Emp_ID)
+values (9,1)
 
 select * from Unpaid_Leave
 -------------------
@@ -2663,6 +2665,11 @@ values ('12-2-2025',null,null,'absent',1)
 insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
 values ('12-3-2025','08:30','16:00','attended',1)
 
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-4-2025','08:30','16:00','attended',8)
+insert into Attendance (date,check_in_time,check_out_time,status,emp_ID)
+values ('12-3-2025','08:30','16:00','attended',1)
+
 select * from Attendance
 -----------------------------------------
 insert into Employee_Replace_Employee (Emp1_ID,Emp2_ID,from_date, to_date)
@@ -2686,15 +2693,15 @@ select * from Performance
 ------------------------------------------------
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (1,'10-01-2025',1333.33,'missing_days','finalized',null,7)
+values (1,'12-04-2025',1333.33,'missing_days','finalized',null,7)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (1,'10-28-2025',1333.33,'missing_days','pending',null,5)
+values (1,'12-28-2025',1333.33,'missing_days','pending',null,5)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
-values (2,'09-01-2025',30400,'unpaid','finalized',13,null)
+values (2,'12-01-2025',30400,'unpaid','finalized',13,null)
 
 insert into Deduction (emp_ID,date,amount,type,
 status,unpaid_ID,attendance_ID)
@@ -2863,3 +2870,9 @@ JOIN Employee_Role ER ON ER.emp_ID = E.employee_id
 WHERE EAL.leave_ID = @req_id
 ORDER BY ER.role_name;
 
+
+select * from Employee_Approve_Leave where emp1_id=5;
+
+select * from payroll where emp_ID=1;
+
+select * from deduction where emp_ID=1;

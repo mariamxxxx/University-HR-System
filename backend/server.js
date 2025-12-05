@@ -6,9 +6,10 @@ const { sql, poolPromise } = require("./db");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
+// Test route
 app.get("/", (req, res) => {
     res.send("Backend is running!");
 });
@@ -302,7 +303,6 @@ app.get("/api/employee/payroll/:employeeId", async (req, res) => {
         });
     }
 });
-
 
 //-------------------------------------------------- ROKAIA --------------------------------------------------------//
 
@@ -752,13 +752,18 @@ app.get("/api/pending-approvals/:employeeId", async (req, res) => {
 app.get("/view-employees", async (req, res) => {
     try {
         const pool = await poolPromise;
-        const result = await pool
+        
+        // Call the stored procedure
+        await pool
             .request()
-            .query("SELECT * FROM allEmployeeProfiles");
-        res.json(result.recordset);
+            .input("request_ID", sql.Int, request_ID)
+            .input("HR_ID", sql.Int, HR_ID)
+            .execute("HR_approval_an_acc");
+            
+        res.json({ success: true, message: "Leave processed successfully" });
     } catch (err) {
-        console.error("Error fetching employees:", err);
-        res.status(500).json({ error: "Failed to fetch employees" });
+        console.error("Error approving leave:", err);
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
     }
 });
 
@@ -933,10 +938,456 @@ app.post("/initiate-attendance", async (req, res) => {
 //-------------------------------------------------- DANA --------------------------------------------------------//
 
 
+// HR Login endpoint
+app.post("/hr-login", async (req, res) => {
+    const { employee_ID, password } = req.body;
+    
+    console.log(`Login attempt - Employee ID: ${employee_ID}`);
+
+    try {
+        const pool = await poolPromise;
+        
+        // Use the EmployeeLoginValidation function to check credentials
+        const validationResult = await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .input("password", sql.VarChar(50), password)
+            .query("SELECT dbo.HRLoginValidation(@employee_ID, @password) as isValid");
+
+        const isValid = validationResult.recordset[0].isValid;
+        console.log(`Validation result for employee ${employee_ID}: ${isValid}`);
+
+        if (isValid) {
+            // Get employee details
+            const employeeResult = await pool
+                .request()
+                .input("employee_ID", sql.Int, employee_ID)
+                .query(`
+                    SELECT e.*, d.name as dept_name, d.building_location 
+                        FROM Employee e 
+                        LEFT JOIN Department d 
+                        ON e.dept_name = d.name 
+                        WHERE e.employee_id = @employee_ID
+                `);
+
+            if (employeeResult.recordset.length > 0) {
+                console.log(`Login successful for: ${employeeResult.recordset[0].first_name} ${employeeResult.recordset[0].last_name}`);
+                res.json({
+                    success: true,
+                    message: "Login successful",
+                    data: employeeResult.recordset[0]
+                });
+            } else {
+                console.log(`Employee ${employee_ID} not found in database`);
+                res.json({
+                    success: false,
+                    message: "Employee not found"
+                });
+            }
+        } else {
+            console.log(`Invalid credentials for employee ${employee_ID}`);
+            res.json({
+                success: false,
+                message: "Invalid ID or password"
+            });
+        }
+    } catch (err) {
+        console.error("Error during login:", err);
+        res.status(500).json({ 
+            success: false,
+            message: err.message,
+            error: "Failed to process login" 
+        });
+    }
+});
+
+
+// Get pending leaves for HR approval - UPDATED
+
+// Add this endpoint AFTER the HR login endpoint but BEFORE the approval endpoints
+app.get("/pending-leaves", async (req, res) => {
+    try {
+        const pool = await poolPromise;
+
+        let hrEmployeeId = null;
+        if (req.query.hrId) hrEmployeeId = parseInt(req.query.hrId);
+        if (!hrEmployeeId) {
+            return res.status(400).json({
+                success: false,
+                message: "HR employee ID missing"
+            });
+        }
+
+        console.log("HR employee id detected:", hrEmployeeId);
+
+        const result = await pool.request()
+            .input("Emp1_ID", sql.Int, hrEmployeeId)
+            .query(`
+                    SELECT 
+                    l.request_ID,
+                    l.date_of_request,
+                    l.start_date,
+                    l.end_date,
+                    l.num_days,
+                    l.final_approval_status,
+
+                    -- Employee Name
+                    e.first_name + ' ' + e.last_name AS employee_name,
+
+                    -- THE REAL EMPLOYEE ID FROM THE CORRECT LEAVE TABLE
+                    COALESCE(
+                        al.emp_ID,
+                        acl.emp_ID,
+                        ml.Emp_ID,
+                        ul.Emp_ID,
+                        cl.emp_ID
+                    ) AS employee_ID,
+
+                    -- Leave type detection 
+                    LTRIM(RTRIM(
+                        CASE 
+                            WHEN al.request_ID IS NOT NULL THEN 'Annual'
+                            WHEN acl.request_ID IS NOT NULL THEN 'Accidental'
+                            WHEN ml.request_ID IS NOT NULL THEN 'Medical'
+                            WHEN ul.request_ID IS NOT NULL THEN 'Unpaid'
+                            WHEN cl.request_ID IS NOT NULL THEN 'Compensation'
+                            ELSE 'Unknown'
+                        END
+                    )) AS leave_type
+
+                FROM Leave l
+
+                -- Filter by HR approver
+                INNER JOIN Employee_Approve_Leave EAL
+                    ON EAL.Leave_ID = l.request_ID
+                    AND EAL.Emp1_ID = @Emp1_ID
+
+                -- LEFT JOIN leave type tables
+                LEFT JOIN Annual_Leave al ON l.request_ID = al.request_ID
+                LEFT JOIN Accidental_Leave acl ON l.request_ID = acl.request_ID
+                LEFT JOIN Medical_Leave ml ON l.request_ID = ml.request_ID
+                LEFT JOIN Unpaid_Leave ul ON l.request_ID = ul.request_ID
+                LEFT JOIN Compensation_Leave cl ON l.request_ID = cl.request_ID
+
+                -- JOIN employee using the extracted employee ID
+                LEFT JOIN Employee e ON e.employee_id = COALESCE(
+                        al.emp_ID,
+                        acl.emp_ID,
+                        ml.Emp_ID,
+                        ul.Emp_ID,
+                        cl.emp_ID
+                )
+
+                WHERE l.final_approval_status = 'Pending'
+                ORDER BY l.date_of_request DESC;
+
+            `);
+
+        return res.json({ success: true, data: result.recordset });
+
+    } catch (err) {
+        console.error("Error fetching pending leaves:", err);
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+});
+
+
+
+// 2. HR Approve/Reject Annual or Accidental Leave
+app.post("/approve-annual-accidental", async (req, res) => {
+    const { request_ID, HR_ID, leave_type } = req.body;
+
+    if (!request_ID || !HR_ID) {
+        return res.status(400).json({ success: false, message: "Missing parameters" });
+    }
+    
+    try {
+        const pool = await poolPromise;
+        
+        // Call the stored procedure
+        await pool
+            .request()
+            .input("request_ID", sql.Int, request_ID)
+            .input("HR_ID", sql.Int, HR_ID)
+            .execute("HR_approval_an_acc");
+            
+        res.json({ success: true, message: "Leave processed successfully" });
+    } catch (err) {
+        console.error("Error approving leave:", err);
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+});
+
+// 3. HR Approve/Reject Unpaid Leave
+app.post("/approve-unpaid", async (req, res) => {
+    const { request_ID, HR_ID, leave_type } = req.body;
+
+    
+    if (!request_ID || !HR_ID) {
+        return res.status(400).json({ success: false, message: "Missing parameters" });
+    }
+    
+    try {
+        const pool = await poolPromise;
+        
+        // Call the stored procedure
+        await pool
+            .request()
+            .input("request_ID", sql.Int, request_ID)
+            .input("HR_ID", sql.Int, HR_ID)
+            .execute("HR_approval_Unpaid");
+            
+        res.json({ success: true, message: "Unpaid leave processed successfully" });
+    } catch (err) {
+        console.error("Error processing unpaid leave:", err);
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+});
+
+// 4. HR Approve/Reject Compensation Leave
+app.post("/approve-compensation", async (req, res) => {
+    const { request_ID, HR_ID, leave_type } = req.body;
+
+    
+    if (!request_ID || !HR_ID) {
+        return res.status(400).json({ success: false, message: "Missing parameters" });
+    }
+    
+    try {
+        const pool = await poolPromise;
+        
+        // Call the stored procedure
+        await pool
+            .request()
+            .input("request_ID", sql.Int, request_ID)
+            .input("HR_ID", sql.Int, HR_ID)
+            .execute("HR_approval_comp");
+            
+        res.json({ success: true, message: "Compensation leave processed successfully" });
+    } catch (err) {
+        console.error("Error processing compensation leave:", err);
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+});
+
+// Deduct for missing hours
+app.post("/deduction-hours", async (req, res) => {
+    const { employee_id } = req.body;
+
+    try {
+        const pool = await poolPromise;
+
+        await pool.request()
+            .input("employee_id", sql.Int, employee_id)
+            .execute("deduction_hours");
+
+        res.json({ success: true, message: "Deduction (missing hours) applied successfully" });
+    } catch (err) {
+        console.error("Error in deduction_hours:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Deduct for missing days
+app.post("/deduction-days", async (req, res) => {
+    const { employee_id } = req.body;
+
+    try {
+        const pool = await poolPromise;
+
+        await pool.request()
+            .input("employee_id", sql.Int, employee_id)
+            .execute("deduction_days");
+
+        res.json({ success: true, message: "Deduction (missing days) applied successfully" });
+    } catch (err) {
+        console.error("Error in deduction_days:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Deduct for unpaid cases
+app.post("/deduction-unpaid", async (req, res) => {
+    const { employee_id } = req.body;
+
+    try {
+        const pool = await poolPromise;
+
+        await pool.request()
+            .input("employee_id", sql.Int, employee_id)
+            .execute("deduction_unpaid");
+
+        res.json({ success: true, message: "Deduction (unpaid) applied successfully" });
+    } catch (err) {
+        console.error("Error in deduction_unpaid:", err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+
+// 8. Generate Payroll
+app.post("/api/hr/generate-payroll", async (req, res) => {
+    const { employee_ID, from_date, to_date } = req.body;
+    
+    if (!employee_ID || !from_date || !to_date) {
+        return res.status(400).json({ success: false, message: "Missing parameters" });
+    }
+    
+    try {
+        const pool = await poolPromise;
+        
+        // Call the stored procedure
+        await pool
+            .request()
+            .input("employee_ID", sql.Int, employee_ID)
+            .input("from", sql.Date, from_date)
+            .input("to", sql.Date, to_date)
+            .execute("Add_Payroll");
+            
+        res.json({ success: true, message: "Payroll generated successfully" });
+    } catch (err) {
+        console.error("Error generating payroll:", err);
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+});
 
 
 
 //-------------------------------------------------- HEND --------------------------------------------------------//
+
+
+//display all attendance records for all employees for yesterday
+app.get("/yesterday-all-attendance", async (req, res) => {
+  try {
+        const pool =await poolPromise;
+        const result = await pool.request().query('SELECT * FROM allEmployeeAttendance');
+
+        res.json({ success: true, data: result.recordset });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+//display all performance records for winter semester
+app.get("/winter-performance", async (req, res) => {
+    try {
+        const pool =await poolPromise;
+        const result = await pool.request().query('SELECT * FROM allPerformance');
+
+        res.json({ success: true, data: result.recordset });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+//remove holiday attendance for all employees
+app.post('/remove-holiday', async (req, res) => {
+  try {
+    const pool = await poolPromise;
+    await pool.request().execute('Remove_Holiday');
+
+    res.json({
+      success: true,
+      message: "Holiday attendance removed successfully"
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//remove day off for a certain employee
+app.post('/remove-dayoff', async (req, res) => {
+  const { employeeId } = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("employee_ID", sql.Int, employeeId)
+      .execute("Remove_DayOff");
+
+    res.json({
+      success: true,
+      message: `Employee day-off records were removed successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//remove approved leave for a certain employee
+app.post('/remove-approved-leaves', async (req, res) => {
+  const { employeeId } = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("employee_ID", sql.Int, employeeId)
+      .execute("Remove_Approved_Leaves");
+
+    res.json({
+      success: true,
+      message: `Employee approved leave records were removed successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//Add a new record to employee replace employee
+app.post('/employee-replace-employee', async (req, res) => {
+  const { emp1, emp2, fromDate, toDate} = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("Emp1_ID", sql.Int, emp1)
+      .input("Emp2_ID", sql.Int, emp2)
+      .input("from_Date", sql.Date, fromDate)
+      .input("to_Date", sql.Date, toDate)
+      .execute("Replace_Employee");
+    res.json({
+      success: true,
+      message: `Employee replacement recorded successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+//Update employee status
+app.post('/update-employment-status', async (req, res) => {
+  const { employeeId } = req.body;
+
+  try {
+    const pool = await poolPromise;
+
+    await pool.request()
+      .input("Employee_ID", sql.Int, employeeId)
+      .execute("Update_Employment_Status");
+    res.json({
+      success: true,
+      message: `Employment status updated successfully`
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
 
 // Start server only after DB is ready
 poolPromise

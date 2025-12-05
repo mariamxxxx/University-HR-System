@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { api } from '../utils/api.tsx';
+import { fetchEmployeesFromBackend } from './admin/AdminPart1';
+import { formatTime } from '../utils/time';
 import {fetchEmployeesFromBackend, 
         fetchEmployeesPerDeptFromBackend, 
         fetchRejectedMedicalsFromBackend,
@@ -178,7 +180,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   </svg>
                   Quick Actions
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-6">
                   <button
                     onClick={async () => {
                       setLoading(true);
@@ -452,9 +454,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b-2 border-gray-200">
-                        <th className="text-left py-3 px-4 text-gray-700">Employee</th>
-                        <th className="text-left py-3 px-4 text-gray-700">Check-in</th>
-                        <th className="text-left py-3 px-4 text-gray-700">Check-out</th>
+                        <th className="text-left py-3 px-4 text-gray-700">Employee ID</th>
+                        <th className="text-left py-3 px-4 text-gray-700">Check-in Time</th>
+                        <th className="text-left py-3 px-4 text-gray-700">Check-out Time</th>
                         <th className="text-left py-3 px-4 text-gray-700">Duration</th>
                         <th className="text-left py-3 px-4 text-gray-700">Status</th>
                       </tr>
@@ -462,9 +464,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     <tbody>
                       {yesterdayAttendance.map((att, idx) => (
                         <tr key={idx} className="border-b border-gray-100">
-                          <td className="py-3 px-4 text-gray-900">{att['Employee Name']}</td>
-                          <td className="py-3 px-4 text-gray-600">{att.check_in_time || 'N/A'}</td>
-                          <td className="py-3 px-4 text-gray-600">{att.check_out_time || 'N/A'}</td>
+                          <td className="py-3 px-4 text-gray-900">{att.emp_ID}</td>
+                          <td className="py-3 px-4 text-gray-600">{formatTime(att.check_in_time)}</td>
+                          <td className="py-3 px-4 text-gray-600">{formatTime(att.check_out_time)}</td>
                           <td className="py-3 px-4 text-gray-600">{att.total_duration || 'N/A'} mins</td>
                           <td className="py-3 px-4">
                             <span className={`inline-flex px-3 py-1 rounded-full text-xs ${att.status === 'attended' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
@@ -646,7 +648,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               }}
               className="mb-4 bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors"
             >
-              Load Winter Performance
+              View Winter Performance
             </button>
             {winterPerformance.length > 0 && (
               <div className="space-y-4">
@@ -654,6 +656,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <div key={idx} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
                     <div className="flex items-center justify-between">
                       <div>
+                        <p className="text-gray-900">{perf['emp_ID']}</p>
                         <p className="text-gray-900">{perf['Employee Name']}</p>
                         <p className="text-gray-600 text-sm">{perf.semester} - {perf.comments}</p>
                       </div>
@@ -717,20 +720,26 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     required
                   />
                   <div className="grid grid-cols-2 gap-4">
-                    <input
-                      type="date"
-                      value={replacementData.from_date}
-                      onChange={(e) => setReplacementData({ ...replacementData, from_date: e.target.value })}
-                      className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                      required
-                    />
-                    <input
-                      type="date"
-                      value={replacementData.to_date}
-                      onChange={(e) => setReplacementData({ ...replacementData, to_date: e.target.value })}
-                      className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                      required
-                    />
+                    <div>
+                      <label className="block text-gray-500 mb-1 text-center">From</label>
+                      <input
+                        type="date"
+                        value={replacementData.from_date}
+                        onChange={(e) => setReplacementData({ ...replacementData, from_date: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-500 mb-1 text-center">To</label>
+                      <input
+                        type="date"
+                        value={replacementData.to_date}
+                        onChange={(e) => setReplacementData({ ...replacementData, to_date: e.target.value })}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
                   </div>
                   <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-3 rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all disabled:opacity-50">
                     Record Replacement
@@ -771,56 +780,59 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <h3 className="text-gray-900 mb-4 flex items-center gap-2">
-                <span>🧹</span>
-                Cleanup Operations
-              </h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <button
-                  onClick={async () => {
-                    if (!confirm('Remove all attendance during holidays?')) return;
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+                <h3 className="text-gray-900 mb-4 flex items-center gap-2">
+                  <span>🧹</span>
+                  Cleanup Operations
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Remove all attendance during holidays?')) return;
+                        setLoading(true);
+                        try {
+                          const result = await api.removeHolidayAttendance();
+                          toast.success(result.message);
+                        } catch (error: any) {
+                          toast.error(error.message);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
+                    >
+                      Remove Official Holiday Attendance
+                    </button>
+                  </div>
+
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
                     setLoading(true);
                     try {
-                      const result = await api.removeHolidayAttendance();
+                      const result = await api.removeDayOff(parseInt(employeeIdForDayOff));
                       toast.success(result.message);
+                      setEmployeeIdForDayOff('');
                     } catch (error: any) {
                       toast.error(error.message);
                     } finally {
                       setLoading(false);
                     }
-                  }}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all"
-                >
-                  Remove Holiday Attendance
-                </button>
-                <form onSubmit={async (e) => {
-                  e.preventDefault();
-                  setLoading(true);
-                  try {
-                    const result = await api.removeDayOff(parseInt(employeeIdForDayOff));
-                    toast.success(result.message);
-                    setEmployeeIdForDayOff('');
-                  } catch (error: any) {
-                    toast.error(error.message);
-                  } finally {
-                    setLoading(false);
-                  }
-                }} className="col-span-2 flex gap-4">
-                  <input
-                    type="number"
-                    placeholder="Employee ID"
-                    value={employeeIdForDayOff}
-                    onChange={(e) => setEmployeeIdForDayOff(e.target.value)}
-                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
-                  <button type="submit" disabled={loading} className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all disabled:opacity-50">
-                    Remove Day-off
-                  </button>
-                </form>
+                  }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="number"
+                      placeholder="Employee ID"
+                      value={employeeIdForDayOff}
+                      onChange={(e) => setEmployeeIdForDayOff(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                    <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-xl hover:from-teal-600 hover:to-teal-700 transition-all disabled:opacity-50">
+                      Remove Unattended Day-off
+                    </button>
+                  </form>
+                </div>
               </div>
-            </div>
           </div>
         )}
       </div>
