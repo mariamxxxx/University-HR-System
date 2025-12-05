@@ -1158,10 +1158,13 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
               try {
                 console.log('Submitting evaluation:', evaluationForm);
                 
-                // Check if employee exists and is in same department
+                // Check if employee exists
                 const employeesResult = await api.getEmployees();
                 console.log('Employees result:', employeesResult);
-                const targetEmployee = employeesResult.data.find((emp: any) => emp.employee_ID === parseInt(evaluationForm.employee_ID));
+                const targetEmployeeId = parseInt(evaluationForm.employee_ID);
+                const targetEmployee = employeesResult.data.find((emp: any) => 
+                  emp.employee_ID === targetEmployeeId || emp.employee_id === targetEmployeeId
+                );
                 
                 if (!targetEmployee) {
                   toast.error('Employee not found');
@@ -1169,8 +1172,13 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                   return;
                 }
                 
-                if (targetEmployee.dept_name !== user.dept_name) {
-                  toast.error(`You can only evaluate employees in your department (${user.dept_name}). This employee is in ${targetEmployee.dept_name}.`);
+                console.log('Target employee object:', targetEmployee);
+                const targetDept = targetEmployee.dept_name || targetEmployee.deptName || targetEmployee.dept;
+                console.log('Target department:', targetDept, 'User department:', user.dept_name);
+                
+                // If we can determine the department, check it matches
+                if (targetDept && targetDept !== user.dept_name) {
+                  toast.error(`You can only evaluate employees in your department (${user.dept_name}). This employee is in ${targetDept}.`);
                   setLoading(false);
                   return;
                 }
