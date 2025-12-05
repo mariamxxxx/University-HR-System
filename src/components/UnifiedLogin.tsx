@@ -187,7 +187,7 @@ export function UnifiedLogin({ onLogin }: UnifiedLoginProps) {
                         onClick={() => setUserType('employee')}
                         className={`px-4 py-3 rounded-xl border-2 transition-all ${
                           userType === 'employee'
-                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                            ? 'border-blue-700 bg-blue-700 text-blue-700'
                             : 'border-gray-200 hover:border-gray-300 text-gray-600'
                         }`}
                       >
