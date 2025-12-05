@@ -17,6 +17,25 @@ export const clearStoredEmployeeId = (): void => {
   localStorage.removeItem('employee_id');
 };
 
+async function safeJsonResponse(resp: Response) {
+  let text: string;
+  try {
+    // read as text first so we can give a helpful message
+    text = await resp.text();
+    try {
+      // try parse
+      const parsed = JSON.parse(text);
+      return parsed;
+    } catch (parseErr) {
+      // not valid JSON
+      return { success: false, message: `Invalid JSON from server (status ${resp.status})`, raw: text };
+    }
+  } catch (err) {
+    return { success: false, message: "Failed to read response from server" };
+  }
+}
+
+
 // Mock data store for prototype testing
 let mockData = {
   employees: [
@@ -400,44 +419,6 @@ export const api = {
     return { success: false, message: 'Invalid admin credentials' };
   },
 
-  // Employee signup
-  signupEmployee: async (data: any) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Check if email already exists
-    const emailExists = mockData.employees.some(e => e.email === data.email);
-    if (emailExists) {
-      return { success: false, message: 'Email already exists' };
-    }
-
-    // Create new employee
-    const newEmployee = {
-      employee_ID: mockData.counters.employee++,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      email: data.email,
-      password: data.password,
-      address: data.address || '',
-      gender: data.gender,
-      official_day_off: 'Friday',
-      years_of_experience: 0,
-      national_ID: data.national_ID,
-      employment_status: 'active',
-      type_of_contract: 'full_time',
-      emergency_contact_name: data.emergency_contact_name || '',
-      emergency_contact_phone: data.emergency_contact_phone || '',
-      annual_balance: 21,
-      accidental_balance: 5,
-      salary: 5000,
-      hire_date: getCurrentDate(),
-      last_working_date: null,
-      dept_name: data.dept_name
-    };
-
-    mockData.employees.push(newEmployee);
-    return { success: true, message: `Employee account created successfully. Your Employee ID is: ${newEmployee.employee_ID}` };
-  },
-
   // Employee login
 
   employeeLogin: async (employeeId: number, password: string) => {
@@ -483,20 +464,25 @@ export const api = {
   },
 
   // HR login
-  hrLogin: async (employeeId: number, password: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const employee = mockData.employees.find(e => e.employee_ID === employeeId);
-    if (!employee) {
-      return { success: false, message: 'Employee not found' };
+ hrLogin: async (employee_ID: number, password: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/hr-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ employee_ID, password }),
+      });
+
+      const json = await safeJsonResponse(response);
+      // If non-OK and server returned a JSON-like object, surface its message
+      if (!response.ok) {
+        return { success: false, message: json?.message || `HTTP ${response.status}` };
+      }
+      // Otherwise return whatever the server returned
+      return json;
+    } catch (err: any) {
+      console.error("hrLogin error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
     }
-    if (employee.password !== password) {
-      return { success: false, message: 'Invalid password' };
-    }
-    const hasHRRole = mockData.roles.some(r => r.emp_id === employeeId && r.role_name.includes('HR'));
-    if (!hasHRRole) {
-      return { success: false, message: 'Not an HR employee' };
-    }
-    return { success: true, message: 'HR login successful', data: employee };
   },
 
   // Get all employees
@@ -514,91 +500,6 @@ export const api = {
     }
   },
 
-  // Get employees per department
-  getEmployeesPerDept: async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const counts = mockData.departments.map(dept => ({
-      dept_name: dept.name,
-      Number_of_Employees: mockData.employees.filter(e => e.dept_name === dept.name).length
-    }));
-    return { success: true, data: counts };
-  },
-
-  // Get rejected medical leaves
-  getRejectedMedicals: async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const rejected = mockData.leaves.filter(l => l.type === 'medical' && l.final_approval_status === 'rejected');
-    return { success: true, data: rejected };
-  },
-
-  // Remove deductions for resigned employees
-  removeResignedDeductions: async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const resignedIds = mockData.employees.filter(e => e.employment_status === 'resigned').map(e => e.employee_ID);
-    const removedCount = mockData.deductions.filter(d => resignedIds.includes(d.emp_ID)).length;
-    mockData.deductions = mockData.deductions.filter(d => !resignedIds.includes(d.emp_ID));
-    return { success: true, message: `Removed ${removedCount} deductions for resigned employees` };
-  },
-
-  // Update attendance
-  updateAttendance: async (employeeId: number, checkIn: string, checkOut: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const currentDate = getCurrentDate();
-    const attendance = mockData.attendance.find(a => a.emp_ID === employeeId && a.date === currentDate);
-    
-    if (!attendance) {
-      return { success: false, message: 'No attendance record found for today' };
-    }
-
-    const totalDuration = checkIn && checkOut ? 
-      (parseInt(checkOut.split(':')[0]) * 60 + parseInt(checkOut.split(':')[1])) - 
-      (parseInt(checkIn.split(':')[0]) * 60 + parseInt(checkIn.split(':')[1])) : null;
-    
-    attendance.check_in_time = checkIn || null;
-    attendance.check_out_time = checkOut || null;
-    attendance.total_duration = totalDuration;
-    attendance.status = checkIn ? 'attended' : 'absent';
-    
-    return { success: true, message: 'Attendance updated successfully' };
-  },
-
-  // Add holiday
-  addHoliday: async (name: string, fromDate: string, toDate: string) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const holiday = {
-      holiday_id: mockData.counters.holiday++,
-      name,
-      from_date: fromDate,
-      to_date: toDate
-    };
-    mockData.holidays.push(holiday);
-    return { success: true, message: 'Holiday added successfully', data: holiday };
-  },
-
-  // Initiate attendance
-  initiateAttendance: async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const currentDate = getCurrentDate();
-    let count = 0;
-    
-    mockData.employees.forEach(emp => {
-      const existing = mockData.attendance.find(a => a.emp_ID === emp.employee_ID && a.date === currentDate);
-      if (!existing) {
-        mockData.attendance.push({
-          attendance_ID: mockData.counters.attendance++,
-          date: currentDate,
-          check_in_time: null,
-          check_out_time: null,
-          total_duration: null,
-          status: 'absent',
-          emp_ID: emp.employee_ID
-        });
-        count++;
-      }
-    });
-    
-    return { success: true, message: `Initiated attendance for ${count} employees` };
-  },
 
   //////////////////////////////////////////////////HEND_START//////////////////////////////////////////////////////
 
@@ -1000,8 +901,6 @@ export const api = {
     return response.json();
   },
 
-  
-  
    // Approve/Reject unpaid leave (Dean/Vice-Dean/President)
   approveUnpaidLeave: async (requestId: number, upperboardId: number) => {
     const response = await fetch('http://localhost:5000/approve-unpaid-leave', {
@@ -1084,20 +983,182 @@ export const api = {
       return { success: true, data: { isApprover, role: role.role_name } };
     }
   },
-
-  
-
-
-  
-
   /////////////////////////////////////////////////////////////End Rokaia/////////////////////////////////////////////////////
+   // Get pending leaves – requires hrId
+  getPendingLeaves2: async (hrId: number) => {
+    try {
+      // server route (your server previously used /pending-leaves at root)
+      const url = `${API_BASE_URL}/pending-leaves?hrId=${encodeURIComponent(hrId)}`;
 
+      const response = await fetch(url, { method: "GET" });
+      const json = await safeJsonResponse(response);
+
+      if (!response.ok) {
+        return { success: false, message: json?.message || `HTTP ${response.status}`, data: [] };
+      }
+
+      // If server returned wrapped { success: true, data: [...] } we forward data,
+      // otherwise we assume the body itself is the data array/object.
+      if (json && typeof json === "object" && "success" in json) {
+        return { success: json.success, message: json.message, data: json.data ?? [] };
+      } else {
+        return { success: true, data: json ?? [] };
+      }
+    } catch (err: any) {
+      console.error("getPendingLeaves error:", err);
+      return { success: false, message: `Network error: ${err.message || err}`, data: [] };
+    }
+  },
+
+  approveAnnualLeave2: async (requestId: number, hrId: number, leaveType: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/approve-annual-accidental`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_ID: requestId, HR_ID: hrId, leave_type: leaveType }),
+      });
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("approveAnnualLeave error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
+
+  approveUnpaidLeave2: async (requestId: number, hrId: number, leaveType: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/approve-unpaid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_ID: requestId, HR_ID: hrId, leave_type: leaveType }),
+      });
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("approveUnpaidLeave error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
+
+  approveCompensationLeave: async (requestId: number, hrId: number, leaveType: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/approve-compensation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_ID: requestId, HR_ID: hrId, leave_type: leaveType }),
+      });
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("approveCompensationLeave error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
+
+  processLeave: async (requestId: number, hrId: number, leaveType: string) => {
+    try {
+      let endpoint = "";
+      switch (leaveType.toLowerCase()) {
+        case "annual":
+        case "accidental":
+          endpoint = "/approve-annual-accidental";
+          break;
+        case "unpaid":
+          endpoint = "/approve-unpaid";
+          break;
+        case "compensation":
+          endpoint = "/approve-compensation";
+          break;
+        default:
+          throw new Error("Invalid leave type");
+      }
+
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_ID: requestId, HR_ID: hrId, leave_type: leaveType }),
+      });
+
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("processLeave error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
   
-  
-  
-  
-  
-  
+  deductHours: async (employee_ID: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/deduction-hours`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_ID }),
+      });
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("deductHours error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
+
+  deductDays: async (employee_ID: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/deduction-days`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_ID }),
+      });
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("deductDays error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
+
+  deductUnpaid: async (employee_ID: number) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/deduction-unpaid`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_ID }),
+      });
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("deductUnpaid error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
+
+
+  generatePayroll: async (employee_ID: number, from_date: string, to_date: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/generate-payroll`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_ID, from_date, to_date }),
+      });
+      const json = await safeJsonResponse(response);
+      if (!response.ok) return { success: false, message: json?.message || `HTTP ${response.status}` };
+      return json;
+    } catch (err: any) {
+      console.error("generatePayroll error:", err);
+      return { success: false, message: `Network error: ${err.message || err}` };
+    }
+  },
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
   // Get pending approvals for employee
   getPendingApprovals: async (employeeId: number) => {
     try {
@@ -1129,7 +1190,7 @@ export const api = {
       return { success: true, data: approvals };
     }
   },
-
+  
   // Approve leave
   approveLeave: async (employeeId: number, leaveId: number, status: string) => {
     try {
@@ -1240,6 +1301,7 @@ export const api = {
     
     return { success: true, data: pending };
   },
+
 
   // HR approve leave
   hrApproveLeave: async (requestId: number, hrId: number, leaveType: string) => {
@@ -1390,7 +1452,7 @@ export const api = {
     return { success: true, message: `Deduction of $${amount.toFixed(2)} added for unpaid leave` };
   },
 
-  // Generate payroll
+  /*// Generate payroll
   generatePayroll: async (employeeId: number, fromDate: string, toDate: string) => {
     await new Promise(resolve => setTimeout(resolve, 500));
     const employee = mockData.employees.find(e => e.employee_ID === employeeId);
@@ -1432,7 +1494,7 @@ export const api = {
     });
     
     return { success: true, message: 'Payroll generated successfully', data: payroll };
-  },
+  },*/
 
   // Generate payroll for all employees
   generatePayrollForAll: async (fromDate: string, toDate: string) => {
@@ -1506,6 +1568,6 @@ export const api = {
     return { success: true, data: payrolls };
   },
 
-  // Check if employee is Dean/Vice Dean/President
+  // Check if employee is Dean/Vice Dean/President*/
  
 };
