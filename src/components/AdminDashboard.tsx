@@ -73,22 +73,25 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const loadOverviewData = async () => {
     setLoading(true);
-        try {
-          const result = await fetchEmployeesFromBackend();
-          setEmployees(result);
+    let success = false;
+    try {
+      const result = await fetchEmployeesFromBackend();
+      setEmployees(result);
 
-          const deptResult = await fetchEmployeesPerDeptFromBackend();
-          const normalizedDept = deptResult.map((dept: any) => ({
-            dept_name: dept.dept_name || 'Unassigned',
-            Number_of_Employees: dept.Number_of_Employees || 0
-          }));
-          setEmployeesPerDept(normalizedDept);
+      const deptResult = await fetchEmployeesPerDeptFromBackend();
+      const normalizedDept = deptResult.map((dept: any) => ({
+        dept_name: dept.dept_name || 'Unassigned',
+        Number_of_Employees: dept.Number_of_Employees || 0
+      }));
+      setEmployeesPerDept(normalizedDept);
+      success = true;
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
 
-        } catch (error: any) {
-          toast.error(error.message);
-        } finally {
-          setLoading(false);
-        }
+    return success;
   };
 
   const sections = [
@@ -99,6 +102,31 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     { id: 'performance', name: 'Performance', icon: null },
     { id: 'operations', name: 'Operations', icon: null }
   ];
+
+  const handleFullRefresh = async () => {
+    setActiveSection('overview');
+    setEmployees([]);
+    setEmployeesPerDept([]);
+    setRejectedMedicals([]);
+    setYesterdayAttendance([]);
+    setYesterdayLoaded(false);
+    setWinterPerformance([]);
+    setWinterLoaded(false);
+    setAllPayroll([]);
+    setAttendanceData({ employee_ID: '', check_in_time: '', check_out_time: '' });
+    setHolidayData({ name: '', from_date: '', to_date: '' });
+    setEmployeeIdForDayOff('');
+    setEmployeeIdForLeaves('');
+    setEmployeeIdForStatus('');
+    setReplacementData({ Emp1_ID: '', Emp2_ID: '', from_date: '', to_date: '' });
+
+    const refreshed = await loadOverviewData();
+    if (refreshed) {
+      toast.success('Admin dashboard refreshed');
+    } else {
+      toast.error('Failed to refresh admin data');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -118,15 +146,26 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 <p className="text-gray-600 text-sm">System Administration & Management</p>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleFullRefresh}
+                className="flex items-center gap-2 px-4 py-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.5 9A7.5 7.5 0 0119 12M18.5 15A7.5 7.5 0 015 12" />
+                </svg>
+                Refresh Data
+              </button>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

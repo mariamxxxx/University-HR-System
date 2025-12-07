@@ -1044,7 +1044,7 @@ export const api = {
 
   approveCompensationLeave: async (requestId: number, hrId: number, leaveType: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/approve-compensation`, {
+      const response = await fetch(`${API_BASE_URL}/approve-compensation2`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ request_ID: requestId, HR_ID: hrId, leave_type: leaveType }),

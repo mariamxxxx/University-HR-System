@@ -49,13 +49,14 @@ export function HRDashboard({ user, onLogout }: HRDashboardProps) {
 
   const loadPendingLeaves = async () => {
     setLoading(true);
+    let success = false;
     try {
       console.log("Loading pending leaves...");
       const hrId = getCurrentHrId();
 if (!hrId) {
   toast.error("HR ID missing");
   setLoading(false);
-  return;
+  return false;
 }
 const result = await api.getPendingLeaves2(hrId);
 
@@ -84,6 +85,7 @@ const result = await api.getPendingLeaves2(hrId);
 
         console.log("Normalized leaves:", normalized.map((l: any) => ({ id: l.request_ID, leaveType: l.leaveType })));
         setPendingLeaves(normalized);
+        success = true;
       } else {
         console.error("Failed to load leaves:", result.message);
         toast.error(result.message || "Failed to load pending leaves");
@@ -95,6 +97,28 @@ const result = await api.getPendingLeaves2(hrId);
       setPendingLeaves([]);
     } finally {
       setLoading(false);
+    }
+
+    return success;
+  };
+
+  const handleFullRefresh = async () => {
+    const hrId = getCurrentHrId();
+    if (!hrId) {
+      toast.error("HR ID missing");
+      return;
+    }
+
+    setActiveSection("overview");
+    setPendingLeaves([]);
+    setEmployeeIdForDeduction("");
+    setPayrollForm({ employee_ID: "", from_date: "", to_date: "" });
+
+    const refreshed = await loadPendingLeaves();
+    if (refreshed) {
+      toast.success("HR dashboard refreshed");
+    } else {
+      toast.error("Failed to refresh HR data");
     }
   };
 
@@ -290,15 +314,26 @@ const result = await api.getPendingLeaves2(hrId);
                 </p>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleFullRefresh}
+                className="flex items-center gap-2 px-4 py-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.5 9A7.5 7.5 0 0119 12M18.5 15A7.5 7.5 0 015 12" />
+                </svg>
+                Refresh Data
+              </button>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

@@ -4,6 +4,12 @@ GO
 USE University_HR_ManagementSystem;
 GO
 
+create database test4;
+go
+use test4;
+
+
+go
 CREATE FUNCTION HRSalary_calculation
 (@employee_ID int) 
 Returns decimal(10,2)
@@ -1416,6 +1422,8 @@ GO
 
 ----------------------------------------------------------------------- 2.5 ------------------------------------------------------------
 
+
+GO
 ------------------------ a) --------------------------
 CREATE FUNCTION EmployeeLoginValidation
 (@employee_ID int,
@@ -2794,3 +2802,5 @@ values (5,20,'pending')
 ------------------------------------------------------
 
 select * from deduction
+select * from Employee_Approve_Leave
+exec HR_approval_comp 7,4

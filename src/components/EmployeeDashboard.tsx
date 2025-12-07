@@ -92,8 +92,51 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
     ...(userRole === 'Dean' ? [{ id: 'evaluate', name: 'Evaluate', icon: null }] : [])
   ];
 
+  const handleFullRefresh = async () => {
+    setActiveSection('overview');
+    setPerformanceData([]);
+    setAttendance([]);
+    setPayroll([]);
+    setDeductions([]);
+    setLeaveStatus([]);
+    setPendingApprovals([]);
+    setSemester('');
+    setPerformanceError('');
+    setDeductionMonth('');
+    setDeductionsLoaded(false);
+    setLeaveStatusLoaded(false);
+    setSelectedLeaveType('');
+    setAnnualLeaveForm({ start_date: '', end_date: '', replacement_emp: '' });
+    setAccidentalLeaveForm({ start_date: '', end_date: '' });
+    setMedicalLeaveForm({
+      start_date: '',
+      end_date: '',
+      type: 'sick',
+      insurance_status: 'yes',
+      disability_details: '',
+      document_description: '',
+      file_name: ''
+    });
+    setUnpaidLeaveForm({ start_date: '', end_date: '', document_description: '', file_name: '' });
+    setCompensationLeaveForm({ compensation_date: '', reason: '', date_of_original_workday: '', replacement_emp: '' });
+    setEvaluationForm({ employee_ID: '', rating: '5', comments: '', semester: '' });
+    setLeaveFilter('all');
+    setLeaveSortBy('date');
+    setIsApprover(false);
+    setUserRole(null);
+
+    await checkUserRole();
+    const refreshed = await loadOverviewData();
+    if (refreshed) {
+      toast.success('Employee dashboard refreshed');
+    } else {
+      toast.error('Failed to refresh employee data');
+    }
+  };
+
   const loadOverviewData = async () => {
     setLoading(true);
+    let success = false;
     try {
       const [attResult, statusResult] = await Promise.all([
         api.getAttendance(user.employee_ID),
@@ -101,11 +144,14 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
       ]);
       setAttendance(attResult.data || []);
       setLeaveStatus(statusResult.data || []);
+      success = true;
     } catch (error: any) {
       toast.error(error.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
+
+    return success;
   };
 
 
@@ -277,15 +323,26 @@ export function EmployeeDashboard({ user, onLogout }: EmployeeDashboardProps) {
                 <p className="text-black text-sm">Employee ID: {user.employee_ID} • {user.dept_name}</p>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white hover:bg-red-600 rounded-xl transition-all shadow-md"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleFullRefresh}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-all shadow-sm"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582M20 20v-5h-.581M5.5 9A7.5 7.5 0 0119 12M18.5 15A7.5 7.5 0 015 12" />
+                </svg>
+                Refresh Data
+              </button>
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white hover:bg-red-600 rounded-xl transition-all shadow-md"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

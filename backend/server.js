@@ -1140,7 +1140,7 @@ app.post("/approve-unpaid", async (req, res) => {
 });
 
 // 4. HR Approve/Reject Compensation Leave
-app.post("/approve-compensation", async (req, res) => {
+app.post("/approve-compensation2", async (req, res) => {
     const { request_ID, HR_ID, leave_type } = req.body;
 
     
