@@ -92,22 +92,13 @@ npm install
 node server.js
 ```
 
-The server listens on `http://localhost:5000/` and exposes a sample `POST /run-procedure` endpoint wired to the `Submit_annual` stored procedure. Point your frontend data layer to these endpoints when you are ready to leave the mock API.
-
 ## Development Scripts
 
 | Command | Location | Description |
 |---------|----------|-------------|
 | `npm run dev` | root | Start the Vite dev server |
 | `npm run build` | root | Create a production build |
-| `npm run lint` | root | Run ESLint checks |
 | `npm start` | backend | Launch the Express/MSSQL API |
-
-## Data & API Layer
-
-- `src/utils/api.tsx` centralizes mock endpoints, request helpers, and type-safe responses. Update this file when swapping to real HTTP calls.
-- `src/components/admin/AdminPart1.tsx` demonstrates how persona dashboards execute API calls (fetching leave requests, attendance summaries, approvals). Use it as the reference for wiring additional admin-facing workflows.
-- Shared utilities in `src/utils/time.ts` and supporting hooks keep formatting, date math, and latency simulations consistent across the app.
 
 ## Troubleshooting
 
